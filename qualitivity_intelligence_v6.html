@@ -108,6 +108,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 /* v6: Export button */
 .exp-btn{display:inline-flex;align-items:center;gap:4px;font:11px 'DM Sans',sans-serif;padding:5px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);cursor:pointer;margin:8px 4px 0;transition:all .15s}
 .exp-btn:hover{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+/* v6: Viz combiner toolbar */
+.viz-bar{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;padding:6px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px}
+.viz-btn{font:10px 'JetBrains Mono',monospace;padding:3px 10px;border-radius:5px;border:1px solid var(--bd);background:transparent;color:var(--tx3);cursor:pointer;transition:all .15s}
+.viz-btn:hover{border-color:var(--ac);color:var(--ac)}.viz-btn.va{background:var(--acd);border-color:var(--ac);color:var(--ac)}
+.viz-slot{border:1px dashed var(--bd);border-radius:8px;padding:10px;margin:6px 0;min-height:60px;transition:all .2s}
+.viz-slot:empty::before{content:'Select a visualization above';color:var(--tx3);font-size:11px}
 /* v6: Print header */
 .print-hdr{display:none}
 /* v6: Print styles */
@@ -180,6 +186,86 @@ HI:[7,0],TX:[7,3],FL:[7,7],
 };
 const ST_NAMES={AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
 
+// ===== WORLD TILE MAPS =====
+// Mexico — dealer zone codes mapped to approximate regions (6 rows x 8 cols)
+const MX_ZONES={
+  // Northern border region
+  BC:[0,0],SON:[0,1],CHH:[0,2],COA:[0,3],NLE:[0,4],TAM:[0,5],
+  // Northwest + central north
+  BCS:[1,0],SIN:[1,1],DUR:[1,2],ZAC:[1,3],SLP:[1,4],
+  // Central west
+  NAY:[2,1],AGS:[2,2],JAL:[2,3],GTO:[2,4],QRO:[2,5],HID:[2,6],
+  // Central
+  COL:[3,2],MIC:[3,3],MEX:[3,4],CDMX:[3,5],TLX:[3,6],PUE:[3,7],
+  // South
+  GRO:[4,3],MOR:[4,4],OAX:[4,5],VER:[4,6],
+  // Southeast
+  TAB:[5,4],CHP:[5,5],CAM:[5,6],YUC:[5,7],QROO:[5,8]
+};
+const MX_NAMES={AGS:'Aguascalientes',BC:'Baja California',BCS:'Baja California Sur',CAM:'Campeche',CHP:'Chiapas',CHH:'Chihuahua',CDMX:'Ciudad de México',COA:'Coahuila',COL:'Colima',DUR:'Durango',GTO:'Guanajuato',GRO:'Guerrero',HID:'Hidalgo',JAL:'Jalisco',MEX:'Estado de México',MIC:'Michoacán',MOR:'Morelos',NAY:'Nayarit',NLE:'Nuevo León',OAX:'Oaxaca',PUE:'Puebla',QRO:'Querétaro',QROO:'Quintana Roo',SLP:'San Luis Potosí',SIN:'Sinaloa',SON:'Sonora',TAB:'Tabasco',TAM:'Tamaulipas',TLX:'Tlaxcala',VER:'Veracruz',YUC:'Yucatán',ZAC:'Zacatecas'};
+
+// Dealer code prefix → Mexico state mapping (based on KMX dealer coding)
+const MX_DEALER_STATE={
+  'AC':'CDMX','AD':'CDMX','AM':'MEX','AN':'MEX','AT':'MEX','AQ':'QRO','AG':'AGS',
+  'AJ':'JAL','AP':'PUE','AV':'VER','AO':'OAX','AH':'HID','AZ':'ZAC','AA':'AGS',
+  'AB':'BC','AS':'SIN','BB':'BCS','BM':'MIC','BS':'SON','BT':'TAM','BD':'DUR',
+  'BQ':'QRO','CA':'CAM','CC':'COA','CD':'DUR','CG':'GTO','CJ':'JAL','CM':'MOR',
+  'CN':'NLE','CO':'COL','CQ':'QRO','CT':'CHP','CV':'VER',
+  'DB':'BC','DC':'CHH','DJ':'JAL','DN':'NAY','DP':'PUE','DQ':'QRO','DS':'SLP','DT':'TAM',
+  'EC':'COA','ED':'DUR','EJ':'JAL','EM':'MIC','EN':'NLE','EO':'OAX','EP':'PUE','ES':'SIN','ET':'TAB',
+  'FD':'CDMX','FJ':'JAL','FP':'PUE','FS':'SON','FT':'TAM',
+  'GO':'GRO','HS':'SON','HP':'PUE','HO':'HID','OH':'OAX','SJ':'SLP'
+};
+
+// World regions tile map (4 rows x 7 cols)
+const WORLD_TILE={
+  CA:[0,0],US:[0,1],MX:[0,2],PR:[0,3],
+  CO:[1,2],VE:[1,3],PE:[1,4],EC:[1,5],
+  CL:[2,2],AR:[2,3],BR:[2,4],PY:[2,5],UY:[2,6],
+  SA:[3,0],AE:[3,1],KW:[3,2],QA:[3,3],AU:[3,5],NZ:[3,6]
+};
+const WORLD_NAMES={
+  US:'United States',CA:'Canada',MX:'Mexico',PR:'Puerto Rico',
+  CO:'Colombia',VE:'Venezuela',PE:'Peru',EC:'Ecuador',CL:'Chile',
+  AR:'Argentina',BR:'Brazil',PY:'Paraguay',UY:'Uruguay',
+  SA:'Saudi Arabia',AE:'U.A.E',KW:'Kuwait',QA:'Qatar',
+  AU:'Australia',NZ:'New Zealand',
+  GT:'Guatemala',SV:'El Salvador',HN:'Honduras',NI:'Nicaragua',CR:'Costa Rica',PA:'Panama',
+  DO:'Dominican Republic',JM:'Jamaica',
+  EG:'Egypt',NG:'Nigeria',IQ:'Iraq',JO:'Jordan',OM:'Oman',BH:'Bahrain',LY:'Libya',
+  GU:'Guam',AW:'Aruba'
+};
+// Nation name → country code mapping for world map
+const NATION_CODE={
+  'U.S.A':'US','Canada':'CA','Mexico':'MX','Puerto Rico':'PR',
+  'Colombia':'CO','Peru':'PE','Ecuador':'EC','Chile':'CL',
+  'Argentina':'AR','Paraguay':'PY','Uruguay':'UY',
+  'Panama':'PA','Costa Rica':'CR','El Salvador':'SV','Guatemala':'GT',
+  'Honduras':'HN','Nicaragua':'NI','Dominican Republic':'DO',
+  'Saudi':'SA','U.A.E':'AE','Kuwait':'KW','Qatar':'QA',
+  'Iraq':'IQ','Jordan':'JO','Oman':'OM','Bahrain':'BH',
+  'Egypt':'EG','Nigeria':'NG','Libya':'LY',
+  'Australia':'AU','Guam':'GU','Aruba N.A':'AW',
+  'Curacao':'CW','Turks and Caicos Islands':'TC'
+};
+
+// LATAM tile map (5 rows x 4 cols)
+const LATAM_TILE={
+  MX:[0,0],GT:[0,1],HN:[0,2],PR:[0,3],
+  SV:[1,1],NI:[1,2],DO:[1,3],
+  CR:[2,1],PA:[2,2],CO:[2,3],
+  EC:[3,0],PE:[3,1],VE:[3,2],
+  CL:[4,0],AR:[4,1],PY:[4,2],UY:[4,3]
+};
+
+// Middle East tile map (3 rows x 4 cols)
+const ME_TILE={
+  IQ:[0,1],JO:[0,2],
+  KW:[1,0],SA:[1,1],BH:[1,2],QA:[1,3],
+  OM:[2,1],AE:[2,2],EG:[2,3]
+};
+const ME_NAMES={IQ:'Iraq',JO:'Jordan',KW:'Kuwait',SA:'Saudi Arabia',BH:'Bahrain',QA:'Qatar',OM:'Oman',AE:'U.A.E',EG:'Egypt'};
+
 // ===== SMART SYSTEM CATEGORIES =====
 const SYS_CAT={
   'electrical':{label:'Electrical / Eléctrico / 전기',kw:/electric|electr|bateria|battery|wiring|arnes|cable|배선|배터리|fuse|fusible|bdc|junction|fob|smart.*key|llave|horn|claxon|bocina|혼|sensor|lamp|faro|luz|bulb|foco|light|alternator|starter|arranque|charging|carga/,systems:['Electron'],parts:/BATTERY|WIRING|BDC|JUNCTION|FOB|HORN|LAMP|BULB|STARTER|SENSOR/},
@@ -249,6 +335,12 @@ if(/insights?|briefing|informe|hallazgos|인사이트|intelligence\s*brief/.test
   I.type='report';
 } else if(/\bexport\b|exportar|\bcsv\b|download|descargar|다운로드/.test(lo)){
   I.type='export';
+} else if(/viz\s*studio|estudio|combina|combine|mixer|mezcla|customize|personaliza|drag|swap|mix\s*viz|studio/.test(lo)){
+  I.type='vizstudio';
+} else if(/world\s*map|global\s*map|mapa\s*mundo|mapa\s*global|all\s*markets|todos.*mercados|세계\s*지도/.test(lo)){
+  I.type='worldmap';
+} else if(/\bmexi[ck]o\s*map|mapa\s*mexi[ck]o|멕시코\s*지도/.test(lo)){
+  I.type='mexicomap';
 } else if(/supplier\s*risk|riesgo\s*proveedor|scorecard|공급업체\s*위험/.test(lo)){
   I.type='supplierrisk';
 } else if(/period\s*compar|periodo|3m\s*vs\s*12m|improvement|mejora|deterioro|기간\s*비교|getting\s*better|getting\s*worse/.test(lo)){
@@ -869,6 +961,10 @@ function genRanking(I){
   else if(I.viz==='treemap')h+=mkTreemap(items,mL);
   else{h+=mkBar(items,I.metric,mL);if(items.length>=8)h+=mkPareto(items,'Pareto');}
   h+=mkTbl(items,[{l:I.groupBy,k:'key',f:v=>esc(tr(v,35))},{l:'Claims',k:'count',f:v=>fN(v)},{l:'Total Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'}]);
+  _vizData=data;_vizFilters=I.filters;_vizGroupBy=I.groupBy;_vizMetric=I.metric;
+  h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more charts, switch grouping/metric:</p>`;
+  h+=vizComboBar(data);
+  h+=mkExpBtn(items,'Export Results');
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(tot)} claims</span>`;return h;
 }
 
@@ -959,17 +1055,25 @@ function genAnomaly(I){
 
 function genMap(I){
   const filters={...I.filters};
-  if(!filters.nation&&!filters.region)filters.nation='U.S.A';
-  let data=flt(gDS(),filters).filter(r=>r.state);
-  const qMonth=parseMonth(I._rawQuery||'');
+  const rq=(I._rawQuery||'').toLowerCase();
+  // Detect if user wants a specific country map
+  const wantsMexico=/\bmexi[ck]o\b|\bmex\b|멕시코/.test(rq);
+  const wantsWorld=/world|global|mundo|all\s*market|todos.*mercado|세계/.test(rq);
+  const wantsLatam=/latin|latam|latinoamer|sudamer|south\s*amer/.test(rq);
+  const wantsME=/middle\s*east|medio\s*oriente|중동/.test(rq);
+  if(wantsWorld)return genWorldMap(I);
+  if(wantsMexico){I.filters.nation='Mexico';return genMexicoMap(I);}
+  // Default: try USA first, then add other available regions
+  if(!filters.nation&&!filters.region&&!wantsLatam&&!wantsME)filters.nation='U.S.A';
+  let data=wantsLatam||wantsME?flt(gDS(),I.filters):flt(gDS(),filters).filter(r=>r.state);
+  const qMonth=parseMonth(rq);
   if(qMonth!==undefined){
     const ms=String(qMonth+1).padStart(2,'0');
     const mf=data.filter(r=>r.confMonth&&String(r.confMonth).includes('-'+ms));
     if(mf.length>0)data=mf;
   }
-  if(!data.length)return'<p>No US claims with state data found.</p>';
+  if(!data.length)return'<p>No claims with geographic data found.</p>';
   const fd=fdsc(I.filters);
-  const rq=(I._rawQuery||'').toLowerCase();
   const hasTemp=/temperature|temperatura|temp|기온/.test(rq);
   const hasRain=/rain|lluvia|precip|precipitac|강수/.test(rq);
   const hasSnow=/snow|nieve|눈/.test(rq);
@@ -977,6 +1081,20 @@ function genMap(I){
   const ovLabel=qMonth!==undefined?MONTHS[qMonth]+' '+(ovType==='precip'?'Precip (in)':'Temp (°F)'):(ovType==='precip'?'Annual Precip':'Annual Temp');
   const showOverlay=hasTemp||hasRain||hasSnow;
   const mLabel=qMonth!==undefined?' | '+MONTHS[qMonth]:'';
+  if(wantsLatam){
+    let h=`<p><b>Latin America Map</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+    const latam=flt(gDS(),I.filters).filter(r=>r.region==='Latin America');
+    h+=mkLatamMap(latam,'Latin America Claims');
+    h+=mkBar(ag(latam,'nation','count').slice(0,15),'count','By Country');
+    return h;
+  }
+  if(wantsME){
+    let h=`<p><b>Middle East Map</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+    const me=flt(gDS(),I.filters).filter(r=>r.region==='Middle East');
+    h+=mkMEMap(me,'Middle East Claims');
+    h+=mkBar(ag(me,'nation','count').slice(0,10),'count','By Country');
+    return h;
+  }
   let h='<p><b>US Geographic Analysis</b>'+((fd?' | '+fd:'')+mLabel+' | '+dsl())+'</p>';
   h+=mkKPIs([['US Claims',fN(data.length),'var(--ac)'],['States',fN([...new Set(data.map(r=>r.state))].length),'var(--gn)'],['US Sales',fN(Object.values(SALES_ST).reduce((a,b)=>a+b,0)),'var(--pu)']]);
   if(US_TOPO&&typeof d3!=='undefined'){
@@ -985,7 +1103,17 @@ function genMap(I){
   h+=mkMap(data,'Tile Map — Claim Ratio',true);
   const bySt=ag(data,'state','count').slice(0,15);
   h+=mkBar(bySt,'count','Top States by Claims');
-  h+='<span class="st">Qualitivity '+dsl()+' · '+fN(data.length)+' US claims</span>';
+  // Also show Mexico + World if no specific nation filter
+  if(!I.filters.nation){
+    const allData=flt(gDS(),I.filters);
+    const mxData=allData.filter(r=>r.nation==='Mexico');
+    if(mxData.length>=3)h+=mkMexicoMap(mxData,'México Claims');
+    if(allData.length>data.length+10)h+=mkWorldMap(allData,'All Markets Overview');
+  }
+  _vizData=data;_vizFilters=filters;
+  h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more views:</p>`;
+  h+=vizComboBar(data);
+  h+='<span class="st">Qualitivity '+dsl()+' · '+fN(data.length)+' claims</span>';
   return h;
 }
 
@@ -995,8 +1123,15 @@ function genHeatmap(I){
   h+=mkHeat(data,'system','proj','System × Project');
   h+=mkHeat(data,'natName','proj','Nature × Project');
   h+=mkHeat(data,'system','nation','System × Market');
+  h+=mkHeat(data,'partNM','confMonth','Top Parts × Month');
   const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
   if(usData.length>=5)h+=mkMap(usData,'US Geographic Heatmap (Normalized)',true);
+  const mxData=data.filter(r=>r.nation==='Mexico');
+  if(mxData.length>=3)h+=mkMexicoMap(mxData,'México Geographic Heatmap');
+  if(data.length>=10)h+=mkWorldMap(data,'Global Geographic Heatmap');
+  _vizData=data;_vizFilters=I.filters;
+  h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Combine more views:</p>`;
+  h+=vizComboBar(data);
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
 }
 
@@ -1005,6 +1140,308 @@ function genDetail(I){
   if(!data.length)return'<p>No claims found.</p>';
   let h=`<p><b>Claim Details</b> (${data.length} records)</p>`;
   h+=mkTbl(data,[{l:'VIN',k:'vin',f:v=>v?'…'+String(v).slice(-6):''},{l:'Project',k:'proj',f:v=>esc(v||'')},{l:'Part',k:'partNM',f:v=>esc(tr(v,22))},{l:'Nature',k:'natName',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'},{l:'Cost',k:'totalCost',f:v=>f$(v)}]);
+  return h;
+}
+
+// ===== V6: GENERIC REGION MAP BUILDER =====
+function mkGenMap(data, title, tileMap, nameMap, geoField, cellSize){
+  cellSize=cellSize||48;const gap=3;
+  // Calculate grid dimensions from tile positions
+  let maxR=0,maxC=0;
+  for(const[_,pos]of Object.entries(tileMap)){maxR=Math.max(maxR,pos[0]);maxC=Math.max(maxC,pos[1]);}
+  const rows=maxR+1,cols=maxC+1;
+  // Aggregate claims by geo code
+  const geoClaims={};
+  for(const r of data){
+    let code=r[geoField];
+    if(!code)continue;
+    if(!nameMap[code])continue;
+    geoClaims[code]=(geoClaims[code]||0)+(r.claims||1);
+  }
+  let maxVal=0;
+  for(const v of Object.values(geoClaims))if(v>maxVal)maxVal=v;
+  const W=(cellSize+gap)*cols,H=(cellSize+gap)*rows;
+  let h=`<div class="cb"><div class="ct">${esc(title)}</div>`;
+  h+=`<div style="position:relative;width:${W}px;max-width:100%;margin:0 auto">`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(${cols},${cellSize}px);grid-template-rows:repeat(${rows},${cellSize}px);gap:${gap}px">`;
+  for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){
+    let here=null;
+    for(const[code,[cr,cc]]of Object.entries(tileMap)){if(cr===r&&cc===c){here=code;break;}}
+    if(here){
+      const claims=geoClaims[here]||0;
+      const intensity=maxVal>0?claims/maxVal:0;
+      const ci=Math.min(Math.floor(intensity*10),10);
+      const bg=claims>0?HC[ci]:'#0a0f18';
+      const fg=ci>4?'#fff':'var(--tx3)';
+      const name=nameMap[here]||here;
+      h+=`<div style="background:${bg};color:${fg};border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s;font-family:'JetBrains Mono',monospace;border:1px solid ${ci>2?'transparent':'var(--bd)'}" title="${name}\nClaims: ${claims}" onclick="drill('nation','${name}')" onmouseenter="this.style.transform='scale(1.15)'" onmouseleave="this.style.transform='scale(1)'">
+        <div style="font-size:${cellSize>40?'10':'8'}px;font-weight:700">${here}</div>
+        <div style="font-size:${cellSize>40?'9':'7'}px;margin-top:1px">${claims||''}</div></div>`;
+    } else h+='<div></div>';
+  }}
+  h+='</div>';
+  h+=`<div style="display:flex;align-items:center;gap:4px;margin-top:8px;justify-content:center"><span style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace">Low</span><div style="height:10px;width:160px;border-radius:3px;background:linear-gradient(90deg,${HC[0]},${HC[3]},${HC[6]},${HC[9]},${HC[10]})"></div><span style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace">High</span></div>`;
+  h+='</div>';
+  // Top areas table
+  const sorted=Object.entries(geoClaims).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  if(sorted.length){
+    h+='<div class="tw" style="margin-top:8px"><table><thead><tr><th>#</th><th>Region</th><th>Claims</th><th>% of Total</th></tr></thead><tbody>';
+    const tot=sorted.reduce((s,x)=>s+x[1],0);
+    sorted.forEach(([code,cnt],i)=>{
+      h+=`<tr><td>${i+1}</td><td>${esc(nameMap[code]||code)}</td><td>${fN(cnt)}</td><td>${pc(cnt,tot)}</td></tr>`;
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';return h;
+}
+
+// Mexico map — maps dealer codes to states then renders state tile map
+function mkMexicoMap(data, title){
+  // Map each record to Mexican state via dealer code
+  const mapped=data.map(r=>{
+    const dlr=String(r.dealer||'');
+    const stCode=MX_DEALER_STATE[dlr]||null;
+    return{...r,_mxState:stCode};
+  }).filter(r=>r._mxState);
+  return mkGenMap(mapped,title,MX_ZONES,MX_NAMES,'_mxState',44);
+}
+
+// World overview map
+function mkWorldMap(data, title){
+  const mapped=data.map(r=>{
+    const code=NATION_CODE[r.nation];
+    return code?{...r,_cc:code}:null;
+  }).filter(Boolean);
+  return mkGenMap(mapped,title,WORLD_TILE,WORLD_NAMES,'_cc',50);
+}
+
+// LATAM map
+function mkLatamMap(data, title){
+  const mapped=data.map(r=>{
+    const code=NATION_CODE[r.nation];
+    return code?{...r,_cc:code}:null;
+  }).filter(Boolean);
+  return mkGenMap(mapped,title,LATAM_TILE,{...WORLD_NAMES,...MX_NAMES},'_cc',50);
+}
+
+// Middle East map
+function mkMEMap(data, title){
+  const mapped=data.map(r=>{
+    const code=NATION_CODE[r.nation];
+    return code?{...r,_cc:code}:null;
+  }).filter(Boolean);
+  return mkGenMap(mapped,title,ME_TILE,ME_NAMES,'_cc',55);
+}
+
+// ===== V6: VIZ COMBINER ENGINE =====
+let _vizData=null;let _vizFilters={};let _vizSlots=[];let _vizCounter=0;
+const VIZ_TYPES=[
+  {id:'bar',icon:'📊',label:'Bar Chart',fn:(d,f)=>mkBar(ag(flt(d,f),_vizGroupBy||'partNM',_vizMetric||'count').slice(0,15),_vizMetric||'count','Bar Chart')},
+  {id:'pareto',icon:'📉',label:'Pareto',fn:(d,f)=>mkPareto(ag(flt(d,f),_vizGroupBy||'partNM',_vizMetric||'count').slice(0,15),'Pareto')},
+  {id:'donut',icon:'🍩',label:'Donut',fn:(d,f)=>mkDonut(ag(flt(d,f),_vizGroupBy||'system',_vizMetric||'count'),'Distribution')},
+  {id:'treemap',icon:'🌲',label:'Treemap',fn:(d,f)=>mkTreemap(ag(flt(d,f),_vizGroupBy||'partNM',_vizMetric||'count').slice(0,12),'Treemap')},
+  {id:'heatmap',icon:'🔥',label:'Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'system','proj','System × Project Heatmap')},
+  {id:'scatter',icon:'🔍',label:'Scatter',fn:(d,f)=>mkScatter(flt(d,f).slice(0,250),'Mileage vs Cost')},
+  {id:'trend',icon:'📈',label:'Trend',fn:(d,f)=>{const byM=ag(flt(d,f),'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));return mkBar(byM,'count','Monthly Trend');}},
+  {id:'tbl',icon:'📋',label:'Table',fn:(d,f)=>{const dt=flt(d,f).slice(0,30);return mkTbl(dt,[{l:'Part',k:'partNM',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Cost',k:'totalCost',f:v=>f$(v)},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'}]);}},
+  {id:'usmap',icon:'🗺️',label:'USA Map',fn:(d,f)=>mkMap(flt(d,f).filter(r=>r.nation==='U.S.A'&&r.state),'USA Claims Map',false)},
+  {id:'mxmap',icon:'🇲🇽',label:'México Map',fn:(d,f)=>mkMexicoMap(flt(d,f).filter(r=>r.nation==='Mexico'),'México Claims Map')},
+  {id:'worldmap',icon:'🌍',label:'World Map',fn:(d,f)=>mkWorldMap(flt(d,f),'Global Claims Map')},
+  {id:'histogram',icon:'📊',label:'Mileage Hist',fn:(d,f)=>mkHistogram(flt(d,f).filter(r=>r.mileage>0),'Mileage Distribution')},
+  {id:'waterfall',icon:'💧',label:'Cost Split',fn:(d,f)=>{const dt=flt(d,f);const bySys=ag(dt,'system','cost').slice(0,10).map(s=>{const sd=dt.filter(r=>r.system===s.key);return{key:s.key,...s,pCost:sd.reduce((x,r)=>x+(r.partCost||0),0),lCost:sd.reduce((x,r)=>x+(r.laborCost||0),0),outsource:sd.reduce((x,r)=>x+(r.outsource||0),0)};});return mkWaterfall(bySys,'Cost Breakdown');}},
+  {id:'timeheat',icon:'📅',label:'Time Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'partNM','confMonth','Part × Month Heatmap')},
+  {id:'dealheat',icon:'🏢',label:'Dealer Heat',fn:(d,f)=>mkHeat(flt(d,f),'dealer','confMonth','Dealer × Month Heatmap')},
+];
+let _vizGroupBy='partNM';let _vizMetric='count';
+
+function vizComboBar(dataRef){
+  let h=`<div class="viz-bar" id="vbar${_vizCounter}">`;
+  h+=`<span style="font-size:9px;color:var(--tx3);margin-right:4px">Add viz:</span>`;
+  VIZ_TYPES.forEach(vt=>{
+    h+=`<button class="viz-btn" onclick="addVizSlot('${vt.id}',${_vizCounter})" title="${vt.label}">${vt.icon} ${vt.label}</button>`;
+  });
+  h+=`<span style="font-size:9px;color:var(--tx3);margin-left:auto">Group:</span>`;
+  ['partNM','system','nation','dealer','devName','proj','natName','confMonth'].forEach(g=>{
+    h+=`<button class="viz-btn${g===_vizGroupBy?' va':''}" onclick="_vizGroupBy='${g}';regenVizSlots(${_vizCounter})">${g==='partNM'?'Part':g==='devName'?'Supplier':g==='natName'?'Nature':g==='confMonth'?'Month':g.charAt(0).toUpperCase()+g.slice(1)}</button>`;
+  });
+  h+=`<span style="font-size:9px;color:var(--tx3);margin-left:4px">Metric:</span>`;
+  ['count','cost','mileage'].forEach(m=>{
+    h+=`<button class="viz-btn${m===_vizMetric?' va':''}" onclick="_vizMetric='${m}';regenVizSlots(${_vizCounter})">${m.charAt(0).toUpperCase()+m.slice(1)}</button>`;
+  });
+  h+=`</div>`;
+  h+=`<div id="vslots${_vizCounter}"></div>`;
+  _vizCounter++;
+  return h;
+}
+
+function addVizSlot(vizId, barId){
+  const vt=VIZ_TYPES.find(v=>v.id===vizId);
+  if(!vt||!_vizData)return;
+  const container=document.getElementById('vslots'+barId);
+  if(!container)return;
+  const slot=document.createElement('div');
+  slot.className='viz-slot';
+  slot.setAttribute('data-viz',vizId);
+  const closeBtn=`<div style="text-align:right;margin-bottom:4px"><button class="viz-btn" onclick="this.parentElement.parentElement.remove()" style="color:var(--rd);border-color:var(--rd)">✕ Remove</button></div>`;
+  try{
+    slot.innerHTML=closeBtn+vt.fn(_vizData,_vizFilters);
+  }catch(e){slot.innerHTML=closeBtn+'<p style="color:var(--rd)">Error rendering: '+e.message+'</p>';}
+  container.appendChild(slot);
+  setTimeout(animKPIs,60);
+}
+
+function regenVizSlots(barId){
+  const container=document.getElementById('vslots'+barId);
+  if(!container)return;
+  const slots=[...container.querySelectorAll('.viz-slot')];
+  slots.forEach(slot=>{
+    const vizId=slot.getAttribute('data-viz');
+    const vt=VIZ_TYPES.find(v=>v.id===vizId);
+    if(!vt)return;
+    const closeBtn=`<div style="text-align:right;margin-bottom:4px"><button class="viz-btn" onclick="this.parentElement.parentElement.remove()" style="color:var(--rd);border-color:var(--rd)">✕ Remove</button></div>`;
+    try{slot.innerHTML=closeBtn+vt.fn(_vizData,_vizFilters);}catch(e){slot.innerHTML=closeBtn+'<p style="color:var(--rd)">Error: '+e.message+'</p>';}
+  });
+  // Update group/metric button states
+  const bar=document.getElementById('vbar'+barId);
+  if(bar){bar.querySelectorAll('.viz-btn').forEach(b=>{
+    const t=b.textContent.trim().toLowerCase();
+    if(['part','system','nation','dealer','supplier','nature','month','proj'].includes(t)){
+      const gMap={part:'partNM',system:'system',nation:'nation',dealer:'dealer',supplier:'devName',nature:'natName',month:'confMonth',proj:'proj'};
+      b.classList.toggle('va',gMap[t]===_vizGroupBy);
+    }
+    if(['count','cost','mileage'].includes(t))b.classList.toggle('va',t===_vizMetric);
+  });}
+  setTimeout(animKPIs,60);
+}
+
+// ===== V6: ENHANCED MULTI-REGION MAP GENERATOR =====
+function genWorldMap(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No data.</p>';
+  const fd=fdsc(I.filters);
+  const nations=[...new Set(data.map(r=>r.nation))].filter(Boolean);
+  let h=`<p><b>🌍 Global Claims Map / Mapa Global</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Total Claims',fN(data.length),'var(--ac)'],['Markets',fN(nations.length),'var(--gn)'],
+    ['Regions',fN([...new Set(data.map(r=>r.region))].filter(Boolean).length),'var(--pu)']]);
+  // World overview
+  h+=mkWorldMap(data,'Global Claims Distribution');
+  // USA map
+  const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
+  if(usData.length>=3)h+=mkMap(usData,'United States',false);
+  // Mexico map
+  const mxData=data.filter(r=>r.nation==='Mexico');
+  if(mxData.length>=3)h+=mkMexicoMap(mxData,'México — By Dealer Zone');
+  // LATAM map
+  const latamData=data.filter(r=>r.region==='Latin America');
+  if(latamData.length>=3)h+=mkLatamMap(latamData,'Latin America');
+  // Middle East
+  const meData=data.filter(r=>r.region==='Middle East');
+  if(meData.length>=3)h+=mkMEMap(meData,'Middle East / Medio Oriente');
+  // By region table
+  const byRegion=ag(data,'region','count');
+  if(byRegion.length>1)h+=mkDonut(byRegion,'Claims by Region');
+  const byNation=ag(data,'nation','count');
+  h+=mkBar(byNation.slice(0,15),'count','Claims by Country');
+  // Viz combiner
+  _vizData=data;_vizFilters=I.filters;
+  h+=`<p style="margin-top:12px;font-size:11px;color:var(--tx2)"><b>🔧 Visualization Studio</b> — Click buttons below to add and combine charts. Change grouping and metric to customize.</p>`;
+  h+=vizComboBar(data);
+  h+=`<span class="st">Global Map · ${fN(nations.length)} markets · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+function genMexicoMap(I){
+  const data=flt(gDS(),I.filters).filter(r=>r.nation==='Mexico');
+  if(!data.length)return'<p>No Mexico claims found.</p>';
+  const fd=fdsc(I.filters);
+  let h=`<p><b>🇲🇽 México Claims Map / Mapa de México</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  h+=mkKPIs([['Mexico Claims',fN(data.length),'var(--ac)'],['Total Cost',f$(tc),'var(--or)'],
+    ['Dealers',fN([...new Set(data.map(r=>r.dealer))].length),'var(--gn)'],
+    ['Avg Cost',f$(data.length?tc/data.length:0),'var(--yl)']]);
+  h+=mkMexicoMap(data,'México — Claims by State / Reclamos por Estado');
+  h+=mkBar(ag(data,'partNM','count').slice(0,10),'count','Top 10 Parts México');
+  h+=mkDonut(ag(data,'proj','count'),'Projects');
+  // Viz combiner
+  _vizData=data;_vizFilters={...I.filters,nation:'Mexico'};
+  h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Mix and match charts below:</p>`;
+  h+=vizComboBar(data);
+  h+=`<span class="st">México · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+// ===== V6: ENHANCED ANOMALY WITH GEO + TIME VIEWS =====
+function genEnhancedAnomaly(I){
+  const data=flt(gDS(),I.filters);const dp={};
+  for(const r of data){const k=`${r.dealer}||${r.partNM}`;if(!dp[k])dp[k]={dealer:r.dealer,part:r.partNM,count:0,cost:0,vins:new Set(),nation:r.nation,state:r.state,months:{}};dp[k].count++;dp[k].cost+=(r.totalCost||0);dp[k].vins.add(r.vin);
+    const m=r.confMonth||'?';dp[k].months[m]=(dp[k].months[m]||0)+1;}
+  const fl=Object.values(dp).filter(d=>d.count>=3).sort((a,b)=>b.count-a.count).slice(0,30);
+  if(!fl.length)return'<p>No anomalous patterns (threshold: ≥3 same part per dealer).</p>';
+  // Build the detailed view
+  const fd=fdsc(I.filters);
+  let h=`<p><b>🚨 Dealer Anomaly Detection / Detección de Anomalías</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:8px">≥3 claims same part per dealer — geographic distribution + timeline</p>`;
+  const critCount=fl.filter(f=>f.count>=8).length;
+  const highCount=fl.filter(f=>f.count>=5&&f.count<8).length;
+  h+=mkKPIs([['Anomalies Found',fN(fl.length),critCount>0?'var(--rd)':'var(--or)'],
+    ['Critical (≥8)',fN(critCount),'var(--rd)'],['High (≥5)',fN(highCount),'var(--or)'],
+    ['Total Cost',f$(fl.reduce((s,f)=>s+f.cost,0)),'var(--yl)']]);
+  // Main table
+  h+=mkTbl(fl.map(f=>({...f,uv:f.vins.size,flag:f.count>=8?'🔴 Critical':f.count>=5?'🟠 High':'🟡 Watch'})),[{l:'Risk',k:'flag',f:v=>v},{l:'Dealer',k:'dealer',f:v=>esc(v)},{l:'Part',k:'part',f:v=>esc(tr(v,25))},{l:'Claims',k:'count',f:v=>`<b>${v}</b>`},{l:'VINs',k:'uv',f:v=>fN(v)},{l:'Cost',k:'cost',f:v=>f$(v)},{l:'Nation',k:'nation',f:v=>esc(v||'')}]);
+
+  // Geographic heatmap — anomaly claims by nation
+  const anomalyRecords=[];
+  for(const f of fl){
+    const recs=data.filter(r=>r.dealer===f.dealer&&r.partNM===f.part);
+    anomalyRecords.push(...recs);
+  }
+  if(anomalyRecords.length>=3){
+    // By nation map
+    const byNation=ag(anomalyRecords,'nation','count');
+    if(byNation.length>1)h+=mkDonut(byNation,'Anomaly Distribution by Market');
+    // USA geographic heatmap of anomalies
+    const usAnom=anomalyRecords.filter(r=>r.nation==='U.S.A'&&r.state);
+    if(usAnom.length>=3)h+=mkMap(usAnom,'USA Anomaly Geographic Heatmap',false);
+    // Mexico geographic heatmap
+    const mxAnom=anomalyRecords.filter(r=>r.nation==='Mexico');
+    if(mxAnom.length>=3)h+=mkMexicoMap(mxAnom,'México Anomaly Heatmap');
+    // World view
+    if(anomalyRecords.length>=10)h+=mkWorldMap(anomalyRecords,'Global Anomaly Distribution');
+    // Dealer × Month heatmap (time dimension)
+    const topDealers=fl.slice(0,10);
+    const allMonths=[...new Set(anomalyRecords.map(r=>r.confMonth))].filter(Boolean).sort();
+    if(allMonths.length>=2&&topDealers.length>=2){
+      h+=mkHeat(anomalyRecords.filter(r=>topDealers.some(td=>td.dealer===r.dealer)),'dealer','confMonth','Dealer × Month — Anomaly Timeline');
+    }
+    // Part × Month heatmap
+    const topParts=[...new Set(fl.map(f=>f.part))].slice(0,10);
+    if(allMonths.length>=2&&topParts.length>=2){
+      h+=mkHeat(anomalyRecords.filter(r=>topParts.includes(r.partNM)),'partNM','confMonth','Anomalous Part × Month Timeline');
+    }
+  }
+  h+=mkTreemap(fl.map(f=>({key:`${f.dealer}: ${tr(f.part,15)}`,value:f.count})),'Anomaly Distribution');
+  // Viz combiner
+  _vizData=anomalyRecords.length?anomalyRecords:data;_vizFilters=I.filters;
+  h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Combine additional views for anomaly data:</p>`;
+  h+=vizComboBar(_vizData);
+  _lastExport=fl;
+  h+=mkExpBtn(fl,'Export Anomalies');
+  h+=`<span class="st">Anomaly Detection · ${fN(fl.length)} patterns · ${fN(anomalyRecords.length)} claims</span>`;
+  return h;
+}
+
+// ===== V6: STANDALONE VIZ STUDIO =====
+function genVizStudio(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No data.</p>';
+  const fd=fdsc(I.filters);
+  let h=`<p><b>🎨 Visualization Studio / Estudio de Visualización</b>${fd?' | '+fd:''} | ${dsl()} (${fN(data.length)} claims)</p>`;
+  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:6px">Click buttons to add charts. Change the grouping field and metric to customize. Each chart is independent — mix maps, bars, heatmaps, waterfalls, and more. Remove any chart with the ✕ button.</p>`;
+  h+=mkKPIs([['Claims',fN(data.length),'var(--ac)'],['Cost',f$(data.reduce((s,r)=>s+(r.totalCost||0),0)),'var(--or)'],
+    ['Parts',fN([...new Set(data.map(r=>r.partNM))].length),'var(--pu)'],['Markets',fN([...new Set(data.map(r=>r.nation))].length),'var(--gn)']]);
+  _vizData=data;_vizFilters=I.filters;
+  h+=vizComboBar(data);
+  h+=`<span class="st">Viz Studio · ${fN(data.length)} claims</span>`;
   return h;
 }
 
@@ -1581,12 +2018,15 @@ function proc(q){
     case'export':{const d=flt(gDS(),I.filters);_lastExport=d;exportCSV(d);return`<p>📥 Exported ${fN(d.length)} claims to CSV.</p>`;}
     case'supplierrisk':return genSupplierRisk(I);
     case'periodcompare':return genPeriodCompare(I);
+    case'vizstudio':return genVizStudio(I);
+    case'worldmap':return genWorldMap(I);
+    case'mexicomap':return genMexicoMap(I);
     case'ranking':return genRanking(I);
     case'analysis':return genAnalysis(I);
     case'trend':return genTrend(I);
     case'summary':return genSummary(I);
     case'comparison':return genComparison(I);
-    case'anomaly':return genAnomaly(I);
+    case'anomaly':return genEnhancedAnomaly(I);
     case'climate':return genClimate(I);
     case'map':return genMap(I);
     case'heatmap':return genHeatmap(I);
@@ -1621,8 +2061,13 @@ const CHIPS=[
 {l:'📊 Mileage Dist',q:'Mileage distribution histogram'},
 {l:'🏭 Risk Score',q:'Supplier risk scorecard'},
 {l:'📐 Period Compare',q:'3M vs 12M period comparison'},
+{l:'🎨 Viz Studio',q:'Visualization studio combine'},
 {l:'📊 Dashboard',q:'Summary dashboard overview'},
+{l:'🌍 World Map',q:'World map global all markets'},
 {l:'🗺️ USA Map',q:'Map of USA claims normalized by sales'},
+{l:'🇲🇽 México Map',q:'Mexico map mapa México'},
+{l:'🌎 LATAM Map',q:'Latin America map'},
+{l:'🕌 Middle East',q:'Middle East map'},
 {l:'🌡️ Climate',q:'Climate correlation temperature precipitation analysis'},
 {l:'🔋 Battery CL4',q:'Battery analysis CL4'},
 {l:'❄️ HVAC/AC',q:'HVAC air conditioning analysis'},
@@ -1669,21 +2114,22 @@ ${mkKPIs([['3M',fN(D['3M'].length),'var(--ac)'],['DC',fN(D['DC'].length),'var(--
 <p style="margin-top:10px"><b>🆕 v6 Features:</b></p>
 <p style="font-size:12px;color:var(--tx2);line-height:1.8">
 🧠 <b>Intelligence Briefing</b> — Auto-generated insights & findings<br>
-🚨 <b>Early Warning</b> — Spike detection with severity alerts<br>
+🌍 <b>Multi-Region Maps</b> — USA, México, LATAM, Middle East, World<br>
+🎨 <b>Viz Studio</b> — Combine any charts: bar+map+heatmap+waterfall<br>
+🚨 <b>Enhanced Anomalies</b> — Dealer abuse with geo maps + time heatmaps<br>
 🔮 <b>Forecast</b> — Trend projection with linear regression<br>
 🔁 <b>Repeat VINs</b> — Vehicles with multiple claims<br>
 💧 <b>Cost Split</b> — Part vs labor vs outsource breakdown<br>
 📊 <b>Mileage Distribution</b> — Failure timing histogram<br>
 🏭 <b>Supplier Risk</b> — Composite risk scorecard<br>
 📐 <b>Period Compare</b> — 3M vs 12M rate analysis<br>
-🖨️ <b>Executive Report</b> — Print-ready summary<br>
-📥 <b>CSV Export</b> — Download query results<br>
-🖱️ <b>Click any bar</b> to drill down into that item
+🖨️ <b>Executive Report</b> — Print-ready summary · 📥 <b>CSV Export</b><br>
+🖱️ <b>Click any bar</b> to drill down · <b>Viz toolbar</b> on every result
 </p>
 <p style="margin-top:6px;color:var(--tx3);font-size:11px">
-🇬🇧 Try: "Insights" · "Forecast" · "Repeat VIN detection" · "Cost breakdown" · "Supplier risk scorecard"<br>
-🇪🇸 "Informe inteligencia" · "Pronóstico" · "Desglose costos" · "Reporte ejecutivo"<br>
-🇰🇷 "인사이트" · "예측" · "공급업체 위험" · "기간 비교"
+🇬🇧 "World map" · "Mexico map" · "Viz studio" · "Dealer anomalies" · "Forecast" · "Supplier risk"<br>
+🇪🇸 "Mapa mundial" · "Mapa México" · "Anomalías dealers" · "Pronóstico" · "Desglose costos"<br>
+🇰🇷 "세계 지도" · "멕시코 지도" · "인사이트" · "예측" · "공급업체 위험"
 </p>
 <span class="st">KMX Qualitivity Intelligence · v6 · Mar 2026</span>`,false);
   document.getElementById('lo').style.display='none';inp.focus();
