@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Qualitivity Intelligence — KMX QA</title>
+<title>Qualitivity Intelligence v7 — KMX QA</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#06090f;--sf:#0d1219;--sf2:#141c28;--sf3:#1a2536;--bd:#1e2d44;--bd2:#283a54;--tx:#e8edf5;--tx2:#8896ab;--tx3:#5a6a80;--ac:#38bdf8;--acd:rgba(56,189,248,.12);--pu:#a78bfa;--gn:#34d399;--rd:#f87171;--or:#fb923c;--yl:#fbbf24;--pk:#f472b6;--cy:#22d3ee}
@@ -137,7 +137,14 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <div class="lo" id="lo"><div class="lr"></div><p>Initializing Qualitivity Intelligence...</p></div>
 <header class="hdr">
 <div class="hdr-l"><div class="logo">Qi</div><div class="hdr-t">Qualitivity <span>Intelligence</span></div></div>
-<div class="pills"><span class="pill">Data: <b>Mar 2026</b></span><span class="pill" id="pC">Claims: <b>—</b></span><span class="pill">v<b>6</b></span><button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button></div>
+<div class="pills">
+<span class="pill">Data: <b>Mar 2026</b></span><span class="pill" id="pC">Claims: <b>—</b></span><span class="pill">v<b>7</b></span>
+<button class="pill" onclick="showImportModal()" style="cursor:pointer;background:var(--acd);border-color:var(--ac)" title="Import new Qualitivity data">📥 Import</button>
+<button class="pill" onclick="showSavedQueries()" style="cursor:pointer;background:var(--sf2)" title="Saved queries / Consultas guardadas">⭐</button>
+<button class="pill" onclick="showHistory()" style="cursor:pointer;background:var(--sf2)" title="Query history / Historial">📜</button>
+<button class="pill" onclick="toggleLang()" id="langBtn" style="cursor:pointer;background:var(--sf2)" title="Toggle language">🌐 EN</button>
+<button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button>
+</div>
 </header>
 <div class="kstrip" id="ks"></div>
 <div class="main">
@@ -266,6 +273,17 @@ const ME_TILE={
 };
 const ME_NAMES={IQ:'Iraq',JO:'Jordan',KW:'Kuwait',SA:'Saudi Arabia',BH:'Bahrain',QA:'Qatar',OM:'Oman',AE:'U.A.E',EG:'Egypt'};
 
+// Canada provinces tile map (5 rows x 8 cols)
+const CA_TILE={YT:[0,0],NT:[0,1],NU:[0,4],BC:[2,0],AB:[2,1],SK:[2,2],MB:[2,3],ON:[3,4],QC:[3,5],NL:[3,7],NB:[4,5],NS:[4,6],PE:[4,7]};
+const CA_NAMES={AB:'Alberta',BC:'British Columbia',MB:'Manitoba',NB:'New Brunswick',NL:'Newfoundland',NS:'Nova Scotia',NT:'Northwest Territories',NU:'Nunavut',ON:'Ontario',PE:'Prince Edward Island',QC:'Quebec',SK:'Saskatchewan',YT:'Yukon'};
+
+// Australia states tile map (3 rows x 5 cols)
+const AU_TILE={NT:[0,2],QLD:[0,3],WA:[1,0],SA:[1,2],NSW:[1,3],ACT:[1,4],VIC:[2,3],TAS:[2,4]};
+const AU_NAMES={WA:'Western Australia',NT:'Northern Territory',QLD:'Queensland',SA:'South Australia',NSW:'New South Wales',ACT:'Australian Capital Territory',VIC:'Victoria',TAS:'Tasmania'};
+
+// Canada dealer code prefix → province mapping (KMX coding)
+const CA_DEALER_PROV={};  // TODO: populate when dealer coding scheme is known
+
 // ===== SMART SYSTEM CATEGORIES =====
 const SYS_CAT={
   'electrical':{label:'Electrical / Eléctrico / 전기',kw:/electric|electr|bateria|battery|wiring|arnes|cable|배선|배터리|fuse|fusible|bdc|junction|fob|smart.*key|llave|horn|claxon|bocina|혼|sensor|lamp|faro|luz|bulb|foco|light|alternator|starter|arranque|charging|carga/,systems:['Electron'],parts:/BATTERY|WIRING|BDC|JUNCTION|FOB|HORN|LAMP|BULB|STARTER|SENSOR/},
@@ -333,14 +351,24 @@ if(/insights?|briefing|informe|hallazgos|인사이트|intelligence\s*brief/.test
   I.type='mileagehist';
 } else if(/\breport\b|reporte|executive|ejecutivo|print|imprimir|보고서/.test(lo)&&!/climate|anomal/.test(lo)){
   I.type='report';
+} else if(/excel|xlsx|xls/.test(lo)&&/export|exportar|download|descargar|다운로드/.test(lo)){
+  I.type='exportxls';
 } else if(/\bexport\b|exportar|\bcsv\b|download|descargar|다운로드/.test(lo)){
   I.type='export';
+} else if(/dashboard\s*build|constructor.*dashboard|custom\s*dashboard|build.*dashboard|armar.*dashboard/.test(lo)){
+  I.type='dashbuilder';
+} else if(/snapshot|version|versiones|histor.*datos|data\s*version/.test(lo)&&/data|dato/.test(lo)){
+  I.type='snapshots';
 } else if(/viz\s*studio|estudio|combina|combine|mixer|mezcla|customize|personaliza|drag|swap|mix\s*viz|studio/.test(lo)){
   I.type='vizstudio';
 } else if(/world\s*map|global\s*map|mapa\s*mundo|mapa\s*global|all\s*markets|todos.*mercados|세계\s*지도/.test(lo)){
   I.type='worldmap';
 } else if(/\bmexi[ck]o\s*map|mapa\s*mexi[ck]o|멕시코\s*지도/.test(lo)){
   I.type='mexicomap';
+} else if(/\bcanad[a]?\s*map|mapa\s*canad[a]?|캐나다\s*지도/.test(lo)){
+  I.type='canadamap';
+} else if(/\baustrali[a]?\s*map|mapa\s*australi[a]?|호주\s*지도/.test(lo)){
+  I.type='australiamap';
 } else if(/supplier\s*risk|riesgo\s*proveedor|scorecard|공급업체\s*위험/.test(lo)){
   I.type='supplierrisk';
 } else if(/period\s*compar|periodo|3m\s*vs\s*12m|improvement|mejora|deterioro|기간\s*비교|getting\s*better|getting\s*worse/.test(lo)){
@@ -401,8 +429,24 @@ else if(/\bbl7m?\b/.test(lo))I.filters.proj='BL7M';
 if(/\busa\b|\bu\.?s\.?a\.?\b|united states|estados unidos|미국/.test(lo))I.filters.nation='U.S.A';
 else if(/\bmexi[ck]o\b|\bmex\b|멕시코/.test(lo)&&!/nuevo|pesqu/.test(lo))I.filters.nation='Mexico';
 else if(/\bcanad[a]?\b|캐나다/.test(lo))I.filters.nation='Canada';
+else if(/\baustrali[a]?\b|호주/.test(lo))I.filters.nation='Australia';
+else if(/\bcolombi[a]?\b/.test(lo))I.filters.nation='Colombia';
+else if(/\bper[uú]\b/.test(lo))I.filters.nation='Peru';
+else if(/\bpanama?\b/.test(lo))I.filters.nation='Panama';
+else if(/\bchile\b/.test(lo))I.filters.nation='Chile';
+else if(/\bpuerto\s*rico\b/.test(lo))I.filters.nation='Puerto Rico';
+else if(/\bsaud[ií]\b|saudi/.test(lo))I.filters.nation='Saudi';
+else if(/\bkuwait\b/.test(lo))I.filters.nation='Kuwait';
+else if(/\bqatar\b/.test(lo))I.filters.nation='Qatar';
+else if(/\bu\.?a\.?e\.?\b|emirates|emiratos/.test(lo))I.filters.nation='U.A.E';
+else if(/\bira[qk]\b/.test(lo))I.filters.nation='Iraq';
+else if(/\begypt|egipto/.test(lo))I.filters.nation='Egypt';
+else if(/\bnigeri[a]?\b/.test(lo))I.filters.nation='Nigeria';
 else if(/domestic|nacional|내수/.test(lo))I.filters.nation='Mexico';
 else if(/north america|norteameric|북미/.test(lo))I.filters.region='North America';
+else if(/latin america|latinoamerica|latam|중남미/.test(lo))I.filters.region='Latin America';
+else if(/middle east|medio oriente|중동/.test(lo))I.filters.region='Middle East';
+else if(/pacific|pacifico|태평양/.test(lo))I.filters.region='Pacific';
 if(/\belectron\b|전자/.test(lo))I.filters.system='Electron';
 else if(/\btrim\b|트림/.test(lo))I.filters.system='Trim';
 else if(/\bchassis\b|샤시/.test(lo))I.filters.system='Chassis';
@@ -432,6 +476,15 @@ for(const[cat,cfg]of Object.entries(SYS_CAT)){
 }
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
+// Auto-detect market context: if nation/region filter set but no specific map type, hint the right map
+I._autoMarket=null;
+if(I.filters.nation==='Mexico')I._autoMarket='mexico';
+else if(I.filters.nation==='Canada')I._autoMarket='canada';
+else if(I.filters.nation==='Australia')I._autoMarket='australia';
+else if(I.filters.region==='Latin America')I._autoMarket='latam';
+else if(I.filters.region==='Middle East')I._autoMarket='middleeast';
+else if(['Colombia','Peru','Panama','Chile','Puerto Rico','Ecuador','Argentina','Paraguay','Uruguay','El Salvador','Guatemala','Honduras','Nicaragua','Costa Rica','Dominican Republic'].includes(I.filters.nation))I._autoMarket='latam';
+else if(['Saudi','Kuwait','Qatar','U.A.E','Iraq','Jordan','Oman','Bahrain','Egypt'].includes(I.filters.nation))I._autoMarket='middleeast';
 I._rawQuery=q;
 return I;
 }
@@ -948,6 +1001,19 @@ function genClimate(I){
   return h;
 }
 
+// ===== AUTO-MARKET MAP HELPER =====
+function autoMarketMap(I, data){
+  const m=I._autoMarket;if(!m)return'';
+  const md=data||flt(gDS(),I.filters);
+  if(md.length<3)return'';
+  if(m==='mexico')return mkMexicoMap(md,'México — Geographic Distribution');
+  if(m==='canada')return mkCanadaMap(md,'Canada — Geographic Distribution');
+  if(m==='australia')return mkAustraliaMap(md,'Australia — Geographic Distribution');
+  if(m==='latam')return mkLatamMap(md,'Latin America — Geographic Distribution');
+  if(m==='middleeast')return mkMEMap(md,'Middle East — Geographic Distribution');
+  return'';
+}
+
 // ===== RESPONSE GENERATORS =====
 function genRanking(I){
   const data=flt(gDS(),I.filters);
@@ -961,6 +1027,7 @@ function genRanking(I){
   else if(I.viz==='treemap')h+=mkTreemap(items,mL);
   else{h+=mkBar(items,I.metric,mL);if(items.length>=8)h+=mkPareto(items,'Pareto');}
   h+=mkTbl(items,[{l:I.groupBy,k:'key',f:v=>esc(tr(v,35))},{l:'Claims',k:'count',f:v=>fN(v)},{l:'Total Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'}]);
+  h+=autoMarketMap(I,data);
   _vizData=data;_vizFilters=I.filters;_vizGroupBy=I.groupBy;_vizMetric=I.metric;
   h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more charts, switch grouping/metric:</p>`;
   h+=vizComboBar(data);
@@ -992,6 +1059,7 @@ function genAnalysis(I){
   if(byD.length)h+=`<p style="margin-top:8px"><b>Suppliers:</b> ${byD.map(d=>esc(tr(d.key,30))+' ('+d.count+')').join(' · ')}</p>`;
   const wc=data.filter(r=>r.comment&&r.comment.length>20).slice(0,3);
   if(wc.length){h+='<p style="margin-top:10px"><b>Dealer Comments:</b></p>';wc.forEach(r=>h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r.comment,150))}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`);}
+  h+=autoMarketMap(I,data);
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
 }
 
@@ -1233,6 +1301,69 @@ function mkMEMap(data, title){
   return mkGenMap(mapped,title,ME_TILE,ME_NAMES,'_cc',55);
 }
 
+// Canada map
+function mkCanadaMap(data, title){
+  // For now, Canada doesn't have province data in state field, show by nation only
+  const mapped=data.map(r=>{
+    const code=NATION_CODE[r.nation];
+    return code?{...r,_cc:code}:null;
+  }).filter(Boolean);
+  // If we have province data, use it
+  if(data.some(r=>CA_NAMES[r.state])){
+    return mkGenMap(data,title,CA_TILE,CA_NAMES,'state',50);
+  }
+  // Fallback: aggregate Canada as single tile with summary
+  let h=`<div class="cb"><div class="ct">${esc(title)}</div>`;
+  const total=data.length;
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  h+=`<p>Canada: <b>${fN(total)}</b> claims · <b>${f$(tc)}</b> total cost</p>`;
+  h+=mkBar(ag(data,'partNM','count').slice(0,10),'count','Top Parts — Canada');
+  h+='</div>';
+  return h;
+}
+
+// Australia map
+function mkAustraliaMap(data, title){
+  if(data.some(r=>AU_NAMES[r.state])){
+    return mkGenMap(data,title,AU_TILE,AU_NAMES,'state',55);
+  }
+  let h=`<div class="cb"><div class="ct">${esc(title)}</div>`;
+  const total=data.length;
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  h+=`<p>Australia: <b>${fN(total)}</b> claims · <b>${f$(tc)}</b> total cost</p>`;
+  h+=mkBar(ag(data,'partNM','count').slice(0,10),'count','Top Parts — Australia');
+  h+='</div>';
+  return h;
+}
+
+// Canada map generator
+function genCanadaMap(I){
+  const data=flt(gDS(),{...I.filters,nation:'Canada'});
+  if(!data.length)return'<p>No Canada claims found / No se encontraron reclamos de Canadá.</p>';
+  let h=`<p><b>🍁 Canada Claims Analysis</b></p>`;
+  h+=mkCanadaMap(data,'Canada — Claims by Province');
+  const bySys=ag(data,'system','count').slice(0,8);
+  if(bySys.length)h+=mkDonut(bySys,'System Distribution — Canada');
+  const byPart=ag(data,'partNM','count').slice(0,10);
+  h+=mkBar(byPart,'count','Top Parts — Canada');
+  h+=`<span class="st">Canada Map · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+// Australia map generator
+function genAustraliaMap(I){
+  const data=flt(gDS(),{...I.filters,nation:'Australia'});
+  if(!data.length)return'<p>No Australia claims found.</p>';
+  let h=`<p><b>🦘 Australia Claims Analysis</b></p>`;
+  h+=mkAustraliaMap(data,'Australia — Claims Distribution');
+  const bySys=ag(data,'system','count').slice(0,8);
+  if(bySys.length)h+=mkDonut(bySys,'System Distribution — Australia');
+  const byPart=ag(data,'partNM','count').slice(0,10);
+  h+=mkBar(byPart,'count','Top Parts — Australia');
+  h+=`<span class="st">Australia Map · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
 // ===== V6: VIZ COMBINER ENGINE =====
 let _vizData=null;let _vizFilters={};let _vizSlots=[];let _vizCounter=0;
 const VIZ_TYPES=[
@@ -1247,6 +1378,10 @@ const VIZ_TYPES=[
   {id:'usmap',icon:'🗺️',label:'USA Map',fn:(d,f)=>mkMap(flt(d,f).filter(r=>r.nation==='U.S.A'&&r.state),'USA Claims Map',false)},
   {id:'mxmap',icon:'🇲🇽',label:'México Map',fn:(d,f)=>mkMexicoMap(flt(d,f).filter(r=>r.nation==='Mexico'),'México Claims Map')},
   {id:'worldmap',icon:'🌍',label:'World Map',fn:(d,f)=>mkWorldMap(flt(d,f),'Global Claims Map')},
+  {id:'camap',icon:'🍁',label:'Canada Map',fn:(d,f)=>mkCanadaMap(flt(d,f).filter(r=>r.nation==='Canada'),'Canada Claims Map')},
+  {id:'aumap',icon:'🦘',label:'Australia Map',fn:(d,f)=>mkAustraliaMap(flt(d,f).filter(r=>r.nation==='Australia'),'Australia Claims Map')},
+  {id:'latammap',icon:'🌎',label:'LATAM Map',fn:(d,f)=>mkLatamMap(flt(d,f).filter(r=>r.region==='Latin America'||r.nation==='Mexico'||r.nation==='Puerto Rico'),'LATAM Claims Map')},
+  {id:'memap',icon:'🕌',label:'ME Map',fn:(d,f)=>mkMEMap(flt(d,f).filter(r=>r.region==='Middle East'),'Middle East Claims Map')},
   {id:'histogram',icon:'📊',label:'Mileage Hist',fn:(d,f)=>mkHistogram(flt(d,f).filter(r=>r.mileage>0),'Mileage Distribution')},
   {id:'waterfall',icon:'💧',label:'Cost Split',fn:(d,f)=>{const dt=flt(d,f);const bySys=ag(dt,'system','cost').slice(0,10).map(s=>{const sd=dt.filter(r=>r.system===s.key);return{key:s.key,...s,pCost:sd.reduce((x,r)=>x+(r.partCost||0),0),lCost:sd.reduce((x,r)=>x+(r.laborCost||0),0),outsource:sd.reduce((x,r)=>x+(r.outsource||0),0)};});return mkWaterfall(bySys,'Cost Breakdown');}},
   {id:'timeheat',icon:'📅',label:'Time Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'partNM','confMonth','Part × Month Heatmap')},
@@ -1431,15 +1566,42 @@ function genEnhancedAnomaly(I){
 }
 
 // ===== V6: STANDALONE VIZ STUDIO =====
+// Viz Studio presets — one-click chart combos
+const VIZ_PRESETS=[
+  {id:'overview',label:'📊 Overview',desc:'Bar + Donut + Heatmap',charts:['bar','donut','heatmap']},
+  {id:'geographic',label:'🌍 Geographic',desc:'World + USA + México maps',charts:['worldmap','usmap','mxmap']},
+  {id:'deep',label:'🔬 Deep Dive',desc:'Pareto + Scatter + Time Heatmap',charts:['pareto','scatter','timeheat']},
+  {id:'executive',label:'📋 Executive',desc:'Bar + Donut + Trend + Table',charts:['bar','donut','trend','tbl']},
+  {id:'anomaly',label:'🚨 Anomaly Hunt',desc:'Dealer Heat + Scatter + Bar',charts:['dealheat','scatter','bar']},
+  {id:'allregions',label:'🗺️ All Regions',desc:'World + LATAM + ME + Canada + Australia',charts:['worldmap','latammap','memap','camap','aumap']},
+];
+
+function applyVizPreset(presetId, barId){
+  const preset=VIZ_PRESETS.find(p=>p.id===presetId);
+  if(!preset||!_vizData)return;
+  // Clear existing slots
+  const container=document.getElementById('vslots'+barId);
+  if(container)container.innerHTML='';
+  // Add each chart from the preset
+  preset.charts.forEach(vizId=>addVizSlot(vizId,barId));
+}
+
 function genVizStudio(I){
   const data=flt(gDS(),I.filters);
   if(!data.length)return'<p>No data.</p>';
   const fd=fdsc(I.filters);
   let h=`<p><b>🎨 Visualization Studio / Estudio de Visualización</b>${fd?' | '+fd:''} | ${dsl()} (${fN(data.length)} claims)</p>`;
-  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:6px">Click buttons to add charts. Change the grouping field and metric to customize. Each chart is independent — mix maps, bars, heatmaps, waterfalls, and more. Remove any chart with the ✕ button.</p>`;
+  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:6px">Click a <b>preset</b> for instant chart combos, or build your own by clicking individual chart buttons. Change grouping and metric to customize. Remove any chart with ✕.</p>`;
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)'],['Cost',f$(data.reduce((s,r)=>s+(r.totalCost||0),0)),'var(--or)'],
     ['Parts',fN([...new Set(data.map(r=>r.partNM))].length),'var(--pu)'],['Markets',fN([...new Set(data.map(r=>r.nation))].length),'var(--gn)']]);
   _vizData=data;_vizFilters=I.filters;
+  // Presets bar
+  const nextBar=_vizCounter;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0"><span style="font-size:10px;color:var(--tx3);align-self:center">Presets:</span>`;
+  VIZ_PRESETS.forEach(p=>{
+    h+=`<button class="viz-btn" onclick="applyVizPreset('${p.id}',${nextBar})" title="${p.desc}" style="background:var(--acd);border-color:var(--ac)">${p.label}</button>`;
+  });
+  h+=`</div>`;
   h+=vizComboBar(data);
   h+=`<span class="st">Viz Studio · ${fN(data.length)} claims</span>`;
   return h;
@@ -2016,11 +2178,16 @@ function proc(q){
     case'mileagehist':return genMileageDist(I);
     case'report':return genExecReport(I);
     case'export':{const d=flt(gDS(),I.filters);_lastExport=d;exportCSV(d);return`<p>📥 Exported ${fN(d.length)} claims to CSV.</p>`;}
+    case'exportxls':{const d=flt(gDS(),I.filters);exportXLSX(d,'qualitivity_export');return`<p>📊 Exported ${fN(d.length)} claims to Excel (.xls).</p>`;}
     case'supplierrisk':return genSupplierRisk(I);
     case'periodcompare':return genPeriodCompare(I);
     case'vizstudio':return genVizStudio(I);
+    case'dashbuilder':return genDashboard(I);
+    case'snapshots':{showSnapshots();return'<p>Loading data snapshots...</p>';}
     case'worldmap':return genWorldMap(I);
     case'mexicomap':return genMexicoMap(I);
+    case'canadamap':return genCanadaMap(I);
+    case'australiamap':return genAustraliaMap(I);
     case'ranking':return genRanking(I);
     case'analysis':return genAnalysis(I);
     case'trend':return genTrend(I);
@@ -2045,7 +2212,7 @@ const inp=document.getElementById('inp');
 function addM(c,u){const d=document.createElement('div');d.className=`m ${u?'u':'b'}`;if(u)d.textContent=c;else d.innerHTML=c;ch.appendChild(d);ch.scrollTop=ch.scrollHeight;if(!u)setTimeout(animKPIs,60);}
 function showT(){const d=document.createElement('div');d.className='m b';d.id='typ';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';ch.appendChild(d);ch.scrollTop=ch.scrollHeight;}
 function hideT(){const e=document.getElementById('typ');if(e)e.remove();}
-function send(){const q=inp.value.trim();if(!q)return;addM(q,true);inp.value='';inp.style.height='auto';showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
+function send(){const q=inp.value.trim();if(!q)return;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
 inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
 inp.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
 document.getElementById('snd').addEventListener('click',send);
@@ -2068,6 +2235,11 @@ const CHIPS=[
 {l:'🇲🇽 México Map',q:'Mexico map mapa México'},
 {l:'🌎 LATAM Map',q:'Latin America map'},
 {l:'🕌 Middle East',q:'Middle East map'},
+{l:'🍁 Canada Map',q:'Canada map'},
+{l:'🦘 Australia',q:'Australia map'},
+{l:'📊 Dash Builder',q:'Build custom dashboard'},
+{l:'📸 Snapshots',q:'Data version snapshots'},
+{l:'📊 Excel Export',q:'Export Excel download'},
 {l:'🌡️ Climate',q:'Climate correlation temperature precipitation analysis'},
 {l:'🔋 Battery CL4',q:'Battery analysis CL4'},
 {l:'❄️ HVAC/AC',q:'HVAC air conditioning analysis'},
@@ -2108,30 +2280,32 @@ function init(){
     <div class="kp"><div class="kl">Total Cost</div><div class="kv" style="color:var(--rd)">${f$(tc)}</div><div class="ks">All datasets</div></div>
     <div class="kp"><div class="kl">Top 3M</div><div class="kv" style="color:var(--yl);font-size:12px">${tp?tp.key:'—'}</div><div class="ks">${tp?tp.count+' claims':'—'}</div></div>`;
   mkChips();
-  addM(`<p><b>Qualitivity Intelligence v6</b> — Advanced Analytics</p>
+  addM(`<p><b>Qualitivity Intelligence v7</b> — Advanced Analytics + Data Platform</p>
 <p>${fN(all.length)} warranty claims loaded: <b>3M</b> ${fN(D['3M'].length)} · <b>DC</b> ${fN(D['DC'].length)} · <b>12M</b> ${fN(D['12M'].length)}</p>
 ${mkKPIs([['3M',fN(D['3M'].length),'var(--ac)'],['DC',fN(D['DC'].length),'var(--gn)'],['12M',fN(D['12M'].length),'var(--or)'],['Total Cost',f$(tc),'var(--rd)']])}
-<p style="margin-top:10px"><b>🆕 v6 Features:</b></p>
+<p style="margin-top:10px"><b>🆕 v7 New Features:</b></p>
 <p style="font-size:12px;color:var(--tx2);line-height:1.8">
-🧠 <b>Intelligence Briefing</b> — Auto-generated insights & findings<br>
-🌍 <b>Multi-Region Maps</b> — USA, México, LATAM, Middle East, World<br>
-🎨 <b>Viz Studio</b> — Combine any charts: bar+map+heatmap+waterfall<br>
-🚨 <b>Enhanced Anomalies</b> — Dealer abuse with geo maps + time heatmaps<br>
-🔮 <b>Forecast</b> — Trend projection with linear regression<br>
-🔁 <b>Repeat VINs</b> — Vehicles with multiple claims<br>
-💧 <b>Cost Split</b> — Part vs labor vs outsource breakdown<br>
-📊 <b>Mileage Distribution</b> — Failure timing histogram<br>
-🏭 <b>Supplier Risk</b> — Composite risk scorecard<br>
-📐 <b>Period Compare</b> — 3M vs 12M rate analysis<br>
-🖨️ <b>Executive Report</b> — Print-ready summary · 📥 <b>CSV Export</b><br>
-🖱️ <b>Click any bar</b> to drill down · <b>Viz toolbar</b> on every result
+📥 <b>Data Import</b> — Upload CSV/TSV, auto-merge with existing data, dedup by VIN<br>
+🚨 <b>Import Alerts</b> — Auto-detect anomalies: new parts, cost spikes, volume surges<br>
+📸 <b>Data Versioning</b> — IndexedDB snapshots, compare data across imports<br>
+🍁 <b>Canada & 🦘 Australia Maps</b> — Province/state tiles when data available<br>
+🌐 <b>Auto-Market Detection</b> — "Top 10 Colombia" auto-shows LATAM map<br>
+🎨 <b>Viz Studio Presets</b> — One-click chart combos: Overview, Geographic, Executive<br>
+📊 <b>Dashboard Builder</b> — Multi-panel 2-column layout, add/remove panels<br>
+⭐ <b>Saved Queries</b> — Bookmark favorite queries for one-click access<br>
+📜 <b>Query History</b> — Searchable history of all past queries<br>
+🌐 <b>Language Toggle</b> — Switch UI between EN/ES/KO<br>
+📊 <b>Excel Export</b> — Export any dataset to .xls (Excel XML)
+</p>
+<p style="margin-top:4px;font-size:12px;color:var(--tx2);line-height:1.8">
+<b>v6 Features (still available):</b> 🧠 Intelligence Briefing · 🌍 Multi-Region Maps · 🔮 Forecast · 🔁 Repeat VINs · 💧 Cost Split · 📊 Mileage Distribution · 🏭 Supplier Risk · 📐 Period Compare · 🖨️ Executive Report
 </p>
 <p style="margin-top:6px;color:var(--tx3);font-size:11px">
-🇬🇧 "World map" · "Mexico map" · "Viz studio" · "Dealer anomalies" · "Forecast" · "Supplier risk"<br>
-🇪🇸 "Mapa mundial" · "Mapa México" · "Anomalías dealers" · "Pronóstico" · "Desglose costos"<br>
-🇰🇷 "세계 지도" · "멕시코 지도" · "인사이트" · "예측" · "공급업체 위험"
+🇬🇧 "Canada map" · "Build dashboard" · "Export Excel" · "Data snapshots" · "Top 10 Colombia"<br>
+🇪🇸 "Mapa Canadá" · "Constructor dashboard" · "Exportar Excel" · "Versiones datos"<br>
+🇰🇷 "캐나다 지도" · "호주 지도" · "대시보드" · "엑셀 내보내기"
 </p>
-<span class="st">KMX Qualitivity Intelligence · v6 · Mar 2026</span>`,false);
+<span class="st">KMX Qualitivity Intelligence · v7 · Mar 2026</span>`,false);
   document.getElementById('lo').style.display='none';inp.focus();
 }
 
@@ -2144,11 +2318,553 @@ window.addEventListener('load',()=>{
       D['12M']=QUALITIVITY_12M_ROWS.map(row=>{const o={};cols.forEach((c,i)=>{o[c]=row[i]});return o;});
     }
     if(typeof US_SALES_BY_STATE!=='undefined')SALES_ST=US_SALES_BY_STATE;
-    init();
+    // Load any previously imported data from IndexedDB
+    loadImportedData().then(()=>init());
   } else {
-    document.getElementById('lo').querySelector('p').textContent='No data found.';
+    // Even without embedded data, check IndexedDB for imported data
+    loadImportedData().then(()=>{
+      if(D['3M'].length||D['12M'].length)init();
+      else document.getElementById('lo').querySelector('p').textContent='No data found. Use 📥 Import to load data.';
+    });
   }
 });
+
+// ===== V7: DATA IMPORT MODULE =====
+// Supports CSV/TSV file upload, parses in browser, merges with existing data (dedup by VIN+confMonth+partNM)
+
+function showImportModal(){
+  let existing=document.getElementById('importModal');
+  if(existing){existing.style.display='flex';return;}
+  const modal=document.createElement('div');
+  modal.id='importModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML=`<div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:16px;color:var(--ac)">📥 Import Qualitivity Data</h3>
+      <button onclick="document.getElementById('importModal').style.display='none'" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Upload a CSV or TSV file exported from Qualitivity. Data will be <b>merged</b> with existing records — duplicates (same VIN + month + part) are skipped.</p>
+    <div id="importDropZone" style="border:2px dashed var(--bd2);border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:border-color .2s" onclick="document.getElementById('importFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--ac)'" ondragleave="this.style.borderColor='var(--bd2)'" ondrop="event.preventDefault();this.style.borderColor='var(--bd2)';handleImportFile(event.dataTransfer.files[0])">
+      <p style="font-size:28px;margin-bottom:8px">📁</p>
+      <p style="font-size:13px;color:var(--tx2)">Drop CSV/TSV file here or click to browse</p>
+      <p style="font-size:10px;color:var(--tx3);margin-top:4px">Supports: .csv, .tsv, .txt (tab/comma separated)</p>
+    </div>
+    <input type="file" id="importFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleImportFile(this.files[0])">
+    <div id="importStatus" style="margin-top:12px"></div>
+    <div style="margin-top:12px;padding:10px;background:var(--sf2);border-radius:8px;font-size:11px;color:var(--tx3)">
+      <b>Expected columns:</b> proj, partNM, system, natCode, natName, causeCode, confMonth, useP, mileage, claims, totalCost, nation, region, dealer, devName, state<br>
+      <b>Optional:</b> vin, partNo, brand, model, partCost, laborCost, outsource, comment, safety, faultCorp, no, keyParts<br>
+      <b>Target dataset:</b> <select id="importTarget" style="background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:4px;padding:2px 6px;font-size:11px">
+        <option value="3M">3M (3-Month)</option>
+        <option value="12M">12M (12-Month)</option>
+        <option value="DC">DC (Dealer Claims)</option>
+      </select>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.style.display='none';});
+}
+
+function handleImportFile(file){
+  if(!file)return;
+  const status=document.getElementById('importStatus');
+  status.innerHTML=`<p style="color:var(--ac)">⏳ Reading ${esc(file.name)} (${(file.size/1024).toFixed(1)} KB)...</p>`;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const text=e.target.result;
+      const sep=text.indexOf('\t')!==-1?'\t':',';
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2){status.innerHTML='<p style="color:var(--rd)">❌ File has no data rows.</p>';return;}
+      // Parse header
+      const hdr=parseCSVLine(lines[0],sep).map(h=>h.trim().replace(/^["']|["']$/g,''));
+      // Map column names to our expected fields
+      const colMap=mapImportColumns(hdr);
+      if(!colMap._hasMinCols){
+        status.innerHTML=`<p style="color:var(--rd)">❌ Could not find minimum required columns. Found: ${hdr.join(', ')}</p>`;return;
+      }
+      // Parse data rows
+      const records=[];
+      const errors=[];
+      for(let i=1;i<lines.length;i++){
+        try{
+          const vals=parseCSVLine(lines[i],sep);
+          const rec={};
+          for(const[ourField,colIdx]of Object.entries(colMap)){
+            if(ourField.startsWith('_'))continue;
+            const v=vals[colIdx];
+            if(v===undefined)continue;
+            const clean=v.trim().replace(/^["']|["']$/g,'');
+            // Numeric fields
+            if(['claims','totalCost','partCost','laborCost','outsource','mileage','useP','no'].includes(ourField)){
+              rec[ourField]=parseFloat(clean)||0;
+            } else rec[ourField]=clean;
+          }
+          if(rec.partNM||rec.system)records.push(rec);
+        }catch(err){errors.push(i);}
+      }
+      if(!records.length){status.innerHTML='<p style="color:var(--rd)">❌ No valid records parsed.</p>';return;}
+      // Merge with existing data
+      const target=document.getElementById('importTarget').value;
+      const existing=D[target]||[];
+      // Build dedup key set from existing
+      const dedupSet=new Set();
+      existing.forEach(r=>{
+        const key=`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}|${r.dealer||''}`;
+        dedupSet.add(key);
+      });
+      // Filter new records, skip duplicates
+      let added=0,skipped=0;
+      records.forEach(r=>{
+        const key=`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}|${r.dealer||''}`;
+        if(dedupSet.has(key)){skipped++;return;}
+        dedupSet.add(key);
+        D[target].push(r);added++;
+      });
+      // Save to IndexedDB for persistence
+      saveImportedData();
+      // Run anomaly detection on new data
+      const anomalyReport=detectImportAnomalies(records,existing,target);
+      // Refresh KPI strip
+      refreshKPIs();
+      status.innerHTML=`<div style="padding:10px;background:var(--sf2);border-radius:8px;border-left:3px solid var(--gn)">
+        <p style="color:var(--gn);font-weight:600">✅ Import Complete</p>
+        <p style="font-size:12px;color:var(--tx2);margin-top:4px">
+          <b>${fN(records.length)}</b> records parsed from ${esc(file.name)}<br>
+          <b style="color:var(--gn)">${fN(added)}</b> new records added to <b>${target}</b><br>
+          <b style="color:var(--or)">${fN(skipped)}</b> duplicates skipped
+        </p>
+        ${anomalyReport}
+        <p style="font-size:10px;color:var(--tx3);margin-top:6px">Data saved to browser storage. Will persist across sessions.</p>
+      </div>`;
+      // Show alert in chat
+      if(added>0){
+        addM(`<p><b>📥 Data imported:</b> ${fN(added)} new claims added to ${target} from <i>${esc(file.name)}</i>. ${skipped>0?fN(skipped)+' duplicates skipped.':''}</p>${anomalyReport?'<p style="margin-top:6px"><b>🚨 Import Anomalies Detected:</b></p>'+anomalyReport:''}`,false);
+      }
+    }catch(err){
+      status.innerHTML=`<p style="color:var(--rd)">❌ Parse error: ${esc(err.message)}</p>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line,sep){
+  const result=[];let current='';let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){inQuotes=!inQuotes;continue;}
+    if(ch===sep&&!inQuotes){result.push(current);current='';continue;}
+    current+=ch;
+  }
+  result.push(current);return result;
+}
+
+function mapImportColumns(headers){
+  const map={};let minFound=0;
+  const aliases={
+    proj:['proj','project','proyecto','model'],
+    partNM:['partnm','part_nm','part name','partname','part','parte','nombre parte'],
+    system:['system','sistema','sys'],
+    natCode:['natcode','nat_code','nature code','naturaleza codigo'],
+    natName:['natname','nat_name','nature name','naturaleza nombre','nature','failure mode'],
+    causeCode:['causecode','cause_code','cause code','causa','cause'],
+    confMonth:['confmonth','conf_month','confirmation month','mes confirmacion','month','mes'],
+    useP:['usep','use_period','use period','periodo uso','months in service'],
+    mileage:['mileage','km','kilometraje','odometer'],
+    claims:['claims','claim count','reclamos','qty'],
+    totalCost:['totalcost','total_cost','total cost','costo total','cost'],
+    nation:['nation','country','pais','nacion','market'],
+    region:['region','zona'],
+    dealer:['dealer','distribuidor','dlr','dealer code'],
+    devName:['devname','dev_name','developer','supplier','proveedor','supplier name'],
+    state:['state','estado','province','provincia'],
+    vin:['vin','vehicle','vehiculo'],
+    partNo:['partno','part_no','part number','numero parte'],
+    brand:['brand','marca'],
+    partCost:['partcost','part_cost','part cost','costo parte'],
+    laborCost:['laborcost','labor_cost','labor cost','costo mano obra'],
+    outsource:['outsource','outsource cost','subcontratado'],
+    comment:['comment','comments','comentario','remark','observacion'],
+    safety:['safety','seguridad'],
+    faultCorp:['faultcorp','fault_corp','fault corporation','corporacion falla'],
+    no:['no','number','numero','#'],
+    keyParts:['keyparts','key_parts','key parts','partes clave'],
+    model:['model','modelo']
+  };
+  const headerLower=headers.map(h=>h.toLowerCase().trim());
+  for(const[field,names]of Object.entries(aliases)){
+    for(let i=0;i<headerLower.length;i++){
+      if(names.includes(headerLower[i])){
+        map[field]=i;
+        if(['partNM','system','nation','totalCost'].includes(field))minFound++;
+        break;
+      }
+    }
+  }
+  map._hasMinCols=minFound>=2;
+  return map;
+}
+
+function refreshKPIs(){
+  const all=[...D['3M'],...D['DC'],...D['12M']];
+  const tc=all.reduce((s,r)=>s+(r.totalCost||0),0);
+  document.getElementById('pC').innerHTML=`Claims: <b>${fN(all.length)}</b>`;
+  const ks=document.getElementById('ks');
+  if(ks){
+    ks.innerHTML=`
+    <div class="kp"><div class="kl">3M</div><div class="kv" style="color:var(--ac)">${fN(D['3M'].length)}</div><div class="ks">${D['3M'].filter(r=>r.proj==='CL4').length} CL4 · ${D['3M'].filter(r=>r.proj==='NX4M').length} NX4M · ${D['3M'].filter(r=>r.proj==='BL7M').length} BL7M</div></div>
+    <div class="kp"><div class="kl">DC</div><div class="kv" style="color:var(--gn)">${fN(D['DC'].length)}</div><div class="ks">Dealer Claims</div></div>
+    <div class="kp"><div class="kl">12M</div><div class="kv" style="color:var(--or)">${fN(D['12M'].length)}</div><div class="ks">12-Month</div></div>
+    <div class="kp"><div class="kl">Total Cost</div><div class="kv" style="color:var(--rd)">${f$(tc)}</div><div class="ks">All datasets</div></div>`;
+  }
+}
+
+// ===== V7: ANOMALY ALERTS ON IMPORT =====
+function detectImportAnomalies(newRecords, existingRecords, target){
+  if(!newRecords.length||!existingRecords.length)return'';
+  let alerts=[];
+  // 1. New parts not seen before
+  const existingParts=new Set(existingRecords.map(r=>r.partNM).filter(Boolean));
+  const newParts=[...new Set(newRecords.map(r=>r.partNM).filter(p=>p&&!existingParts.has(p)))];
+  if(newParts.length>0)alerts.push(`<b>🆕 ${newParts.length} new part(s)</b> not in existing data: ${newParts.slice(0,5).map(p=>esc(p)).join(', ')}${newParts.length>5?' ...':'.'}`);
+  // 2. Cost spikes: avg cost in new data vs existing
+  const existAvgCost=existingRecords.reduce((s,r)=>s+(r.totalCost||0),0)/existingRecords.length;
+  const newAvgCost=newRecords.reduce((s,r)=>s+(r.totalCost||0),0)/newRecords.length;
+  if(existAvgCost>0&&newAvgCost>existAvgCost*1.5)alerts.push(`<b>💰 Cost spike:</b> New data avg cost ${f$(newAvgCost)} is ${((newAvgCost/existAvgCost-1)*100).toFixed(0)}% higher than existing ${f$(existAvgCost)}`);
+  // 3. New markets
+  const existingNations=new Set(existingRecords.map(r=>r.nation).filter(Boolean));
+  const newNations=[...new Set(newRecords.map(r=>r.nation).filter(n=>n&&!existingNations.has(n)))];
+  if(newNations.length)alerts.push(`<b>🌍 New market(s):</b> ${newNations.join(', ')}`);
+  // 4. Volume spike per part
+  const existPartCount={};existingRecords.forEach(r=>{if(r.partNM)existPartCount[r.partNM]=(existPartCount[r.partNM]||0)+1;});
+  const newPartCount={};newRecords.forEach(r=>{if(r.partNM)newPartCount[r.partNM]=(newPartCount[r.partNM]||0)+1;});
+  const spikes=[];
+  for(const[part,cnt]of Object.entries(newPartCount)){
+    const prev=existPartCount[part]||0;
+    if(prev>5&&cnt>prev*2)spikes.push({part,prev,now:cnt,ratio:cnt/prev});
+  }
+  spikes.sort((a,b)=>b.ratio-a.ratio);
+  if(spikes.length)alerts.push(`<b>📈 Volume spikes:</b> ${spikes.slice(0,3).map(s=>esc(s.part)+` (${s.prev}→${s.now}, ${((s.ratio-1)*100).toFixed(0)}%↑)`).join(', ')}`);
+  if(!alerts.length)return'';
+  return`<div style="margin-top:8px;padding:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:6px;font-size:11px">${alerts.map(a=>'<p style="margin:3px 0;color:var(--tx2)">'+a+'</p>').join('')}</div>`;
+}
+
+// ===== V7: INDEXEDDB DATA PERSISTENCE =====
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('QualitivityIntelligence',2);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('datasets'))db.createObjectStore('datasets',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('snapshots'))db.createObjectStore('snapshots',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('savedQueries'))db.createObjectStore('savedQueries',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('history'))db.createObjectStore('history',{keyPath:'id'});
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+async function saveImportedData(){
+  try{
+    const db=await openDB();
+    const tx=db.transaction('datasets','readwrite');
+    const store=tx.objectStore('datasets');
+    // Save each dataset
+    store.put({id:'3M',data:D['3M']});
+    store.put({id:'DC',data:D['DC']});
+    store.put({id:'12M',data:D['12M']});
+    // Also save a snapshot with timestamp
+    const snapTx=db.transaction('snapshots','readwrite');
+    const snapStore=snapTx.objectStore('snapshots');
+    const ts=new Date().toISOString().slice(0,19).replace('T',' ');
+    const all=[...D['3M'],...D['DC'],...D['12M']];
+    snapStore.put({id:ts,timestamp:ts,counts:{m3:D['3M'].length,dc:D['DC'].length,m12:D['12M'].length,total:all.length},totalCost:all.reduce((s,r)=>s+(r.totalCost||0),0)});
+  }catch(e){console.warn('IndexedDB save failed:',e);}
+}
+
+async function loadImportedData(){
+  try{
+    const db=await openDB();
+    const tx=db.transaction('datasets','readonly');
+    const store=tx.objectStore('datasets');
+    const get3M=store.get('3M');
+    const getDC=store.get('DC');
+    const get12M=store.get('12M');
+    return new Promise(resolve=>{
+      tx.oncomplete=()=>{
+        // Merge imported data with embedded data (embedded takes precedence, then imported adds on top)
+        if(get3M.result&&get3M.result.data){
+          const existKeys=new Set(D['3M'].map(r=>`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`));
+          get3M.result.data.forEach(r=>{
+            const k=`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`;
+            if(!existKeys.has(k)){D['3M'].push(r);existKeys.add(k);}
+          });
+        }
+        if(getDC.result&&getDC.result.data){
+          const existKeys=new Set(D['DC'].map(r=>`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`));
+          getDC.result.data.forEach(r=>{
+            const k=`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`;
+            if(!existKeys.has(k)){D['DC'].push(r);existKeys.add(k);}
+          });
+        }
+        if(get12M.result&&get12M.result.data){
+          const existKeys=new Set(D['12M'].map(r=>`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`));
+          get12M.result.data.forEach(r=>{
+            const k=`${r.vin||''}|${r.confMonth||''}|${r.partNM||''}`;
+            if(!existKeys.has(k)){D['12M'].push(r);existKeys.add(k);}
+          });
+        }
+        resolve();
+      };
+      tx.onerror=()=>resolve();
+    });
+  }catch(e){console.warn('IndexedDB load failed:',e);return Promise.resolve();}
+}
+
+// ===== V7: SAVED QUERIES =====
+const SAVED_QUERIES_KEY='qi_saved_queries';
+
+function getSavedQueries(){
+  try{return JSON.parse(localStorage.getItem(SAVED_QUERIES_KEY)||'[]');}
+  catch(e){return[];}
+}
+
+function saveQuery(name,query){
+  const queries=getSavedQueries();
+  queries.unshift({id:Date.now(),name,query,ts:new Date().toISOString().slice(0,16)});
+  if(queries.length>50)queries.length=50;
+  localStorage.setItem(SAVED_QUERIES_KEY,JSON.stringify(queries));
+}
+
+function deleteSavedQuery(id){
+  const queries=getSavedQueries().filter(q=>q.id!==id);
+  localStorage.setItem(SAVED_QUERIES_KEY,JSON.stringify(queries));
+  showSavedQueries();
+}
+
+function showSavedQueries(){
+  let modal=document.getElementById('savedModal');
+  if(modal){modal.remove();}
+  modal=document.createElement('div');
+  modal.id='savedModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999';
+  const queries=getSavedQueries();
+  let content=`<div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:500px;width:90%;max-height:70vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="font-size:16px;color:var(--yl)">⭐ Saved Queries / Consultas Guardadas</h3>
+      <button onclick="document.getElementById('savedModal').remove()" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <input type="text" id="saveQueryName" placeholder="Name / Nombre..." style="flex:1;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;color:var(--tx);font-size:12px">
+      <input type="text" id="saveQueryText" placeholder="Query..." style="flex:1;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;color:var(--tx);font-size:12px">
+      <button onclick="saveQuery(document.getElementById('saveQueryName').value,document.getElementById('saveQueryText').value);showSavedQueries();" style="background:var(--acd);border:1px solid var(--ac);border-radius:6px;padding:6px 12px;color:var(--ac);font-size:12px;cursor:pointer">Save</button>
+    </div>`;
+  if(!queries.length){
+    content+=`<p style="color:var(--tx3);font-size:12px;text-align:center;padding:20px">No saved queries yet. Save your favorite queries above, or type a query and use the ⭐ button.</p>`;
+  } else {
+    queries.forEach(q=>{
+      content+=`<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--sf2);border-radius:6px;margin:4px 0;cursor:pointer" onmouseenter="this.style.background='var(--sf3)'" onmouseleave="this.style.background='var(--sf2)'">
+        <div style="flex:1" onclick="document.getElementById('savedModal').remove();inp.value='${esc(q.query)}';send();">
+          <div style="font-size:12px;font-weight:600;color:var(--tx)">${esc(q.name||q.query)}</div>
+          <div style="font-size:10px;color:var(--tx3)">${esc(q.query)} · ${q.ts||''}</div>
+        </div>
+        <button onclick="event.stopPropagation();deleteSavedQuery(${q.id})" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:12px">🗑</button>
+      </div>`;
+    });
+  }
+  content+=`</div>`;
+  modal.innerHTML=content;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+}
+
+// ===== V7: QUERY HISTORY WITH SEARCH =====
+const HISTORY_KEY='qi_query_history';
+let _queryHistory=[];
+
+function loadHistory(){
+  try{_queryHistory=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch(e){_queryHistory=[];}
+}
+function addToHistory(query){
+  loadHistory();
+  // Don't add duplicates of the last entry
+  if(_queryHistory.length&&_queryHistory[0].q===query)return;
+  _queryHistory.unshift({q:query,ts:new Date().toISOString().slice(0,16)});
+  if(_queryHistory.length>200)_queryHistory.length=200;
+  localStorage.setItem(HISTORY_KEY,JSON.stringify(_queryHistory));
+}
+function showHistory(){
+  loadHistory();
+  let modal=document.getElementById('histModal');
+  if(modal)modal.remove();
+  modal=document.createElement('div');
+  modal.id='histModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999';
+  let content=`<div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:500px;width:90%;max-height:70vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="font-size:16px;color:var(--cy)">📜 Query History / Historial</h3>
+      <button onclick="document.getElementById('histModal').remove()" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <input type="text" id="histSearch" placeholder="🔍 Search history / Buscar..." oninput="filterHistory(this.value)" style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;color:var(--tx);font-size:12px;margin-bottom:10px">
+    <div id="histList">`;
+  if(!_queryHistory.length){
+    content+=`<p style="color:var(--tx3);font-size:12px;text-align:center;padding:20px">No query history yet.</p>`;
+  } else {
+    _queryHistory.forEach((h,i)=>{
+      content+=`<div class="hist-item" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--tx2)" onmouseenter="this.style.background='var(--sf2)'" onmouseleave="this.style.background='transparent'" onclick="document.getElementById('histModal').remove();inp.value='${esc(h.q)}';send();">
+        <span style="color:var(--tx3);font-size:10px;min-width:100px">${h.ts||''}</span>
+        <span style="flex:1">${esc(h.q)}</span>
+        <button onclick="event.stopPropagation();saveQuery(&quot;&quot;,&quot;${esc(h.q)}&quot;);this.textContent='✓';this.style.color='var(--gn)'" style="background:none;border:none;color:var(--yl);cursor:pointer;font-size:11px" title="Save">⭐</button>
+      </div>`;
+    });
+  }
+  content+=`</div></div>`;
+  modal.innerHTML=content;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+}
+
+function filterHistory(term){
+  const items=document.querySelectorAll('#histList .hist-item');
+  const lo=term.toLowerCase();
+  items.forEach(item=>{
+    const text=item.textContent.toLowerCase();
+    item.style.display=text.includes(lo)?'flex':'none';
+  });
+}
+
+// ===== V7: MULTI-LANGUAGE UI TOGGLE =====
+let _uiLang='en';
+const UI_STRINGS={
+  en:{insights:'Intelligence briefing',alerts:'Early warning spike detection',forecast:'Warranty cost forecast',dashboard:'Summary dashboard overview',welcome:'Type a question or click a chip below',noData:'No claims found.',import:'Import',saved:'Saved',history:'History',export:'Export'},
+  es:{insights:'Briefing de inteligencia',alerts:'Detección temprana de picos',forecast:'Pronóstico de costos de garantía',dashboard:'Resumen general dashboard',welcome:'Escribe una pregunta o haz clic en un chip',noData:'Sin resultados encontrados.',import:'Importar',saved:'Guardados',history:'Historial',export:'Exportar'},
+  ko:{insights:'인텔리전스 브리핑',alerts:'조기 경보 스파이크 감지',forecast:'보증 비용 예측',dashboard:'요약 대시보드 개요',welcome:'질문을 입력하거나 아래 칩을 클릭하세요',noData:'클레임을 찾을 수 없습니다.',import:'가져오기',saved:'저장됨',history:'기록',export:'내보내기'}
+};
+
+function toggleLang(){
+  const langs=['en','es','ko'];
+  const idx=langs.indexOf(_uiLang);
+  _uiLang=langs[(idx+1)%langs.length];
+  const btn=document.getElementById('langBtn');
+  if(btn)btn.textContent='🌐 '+_uiLang.toUpperCase();
+  // Update placeholder
+  const inp2=document.getElementById('inp');
+  if(inp2)inp2.placeholder=UI_STRINGS[_uiLang].welcome;
+}
+
+// ===== V7: EXCEL EXPORT =====
+function exportXLSX(data,filename){
+  // Generate a proper Excel XML Spreadsheet (no external library needed)
+  filename=filename||'qualitivity_export.xlsx';
+  if(!data||!data.length){alert('No data to export.');return;}
+  const cols=Object.keys(data[0]);
+  let xml='<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>';
+  xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+  xml+='<Worksheet ss:Name="Qualitivity"><Table>';
+  // Header row
+  xml+='<Row>';cols.forEach(c=>xml+=`<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`);xml+='</Row>';
+  // Data rows
+  data.forEach(r=>{
+    xml+='<Row>';
+    cols.forEach(c=>{
+      const v=r[c];
+      const type=typeof v==='number'?'Number':'String';
+      xml+=`<Cell><Data ss:Type="${type}">${type==='Number'?(v||0):esc(String(v||''))}</Data></Cell>`;
+    });
+    xml+='</Row>';
+  });
+  xml+='</Table></Worksheet></Workbook>';
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename.replace(/\.xlsx$/,'.xml.xls');
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== V7: DASHBOARD BUILDER =====
+let _dashSlots=[];
+let _dashCounter=0;
+
+function genDashboard(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No data.</p>';
+  const fd=fdsc(I.filters);
+  let h=`<p><b>📊 Dashboard Builder / Constructor de Dashboard</b>${fd?' | '+fd:''} | ${dsl()} (${fN(data.length)} claims)</p>`;
+  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:8px">Build your custom dashboard by adding panels. Each panel is independent and can be rearranged.</p>`;
+  h+=mkKPIs([['Claims',fN(data.length),'var(--ac)'],['Cost',f$(data.reduce((s,r)=>s+(r.totalCost||0),0)),'var(--or)'],
+    ['Parts',fN([...new Set(data.map(r=>r.partNM))].length),'var(--pu)'],['Markets',fN([...new Set(data.map(r=>r.nation))].length),'var(--gn)']]);
+  _vizData=data;_vizFilters=I.filters;
+  // Dashboard layout with 2-column grid
+  const dashId=_dashCounter++;
+  h+=`<div id="dash${dashId}" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0">`;
+  // Pre-populate with overview panels
+  const panels=[
+    {title:'Top Parts',html:mkBar(ag(data,'partNM','count').slice(0,8),'count','Top 8 Parts')},
+    {title:'System Distribution',html:mkDonut(ag(data,'system','count'),'By System')},
+    {title:'Monthly Trend',html:mkBar(ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key))),'count','Monthly Trend')},
+    {title:'Markets',html:mkDonut(ag(data,'nation','count'),'By Market')},
+  ];
+  panels.forEach((p,i)=>{
+    h+=`<div class="dash-panel" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px;position:relative;min-height:200px">
+      <div style="position:absolute;top:4px;right:4px;display:flex;gap:2px">
+        <button onclick="this.closest('.dash-panel').remove()" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:10px">✕</button>
+      </div>
+      ${p.html}
+    </div>`;
+  });
+  h+=`</div>`;
+  // Add more panels button bar
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"><span style="font-size:10px;color:var(--tx3);align-self:center">Add panel:</span>`;
+  VIZ_TYPES.forEach(vt=>{
+    h+=`<button class="viz-btn" onclick="addDashPanel('${vt.id}',${dashId})" title="${vt.label}">${vt.icon}</button>`;
+  });
+  h+=`</div>`;
+  h+=`<span class="st">Dashboard Builder · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+function addDashPanel(vizId,dashId){
+  const vt=VIZ_TYPES.find(v=>v.id===vizId);
+  if(!vt||!_vizData)return;
+  const container=document.getElementById('dash'+dashId);
+  if(!container)return;
+  const panel=document.createElement('div');
+  panel.className='dash-panel';
+  panel.style.cssText='background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px;position:relative;min-height:200px';
+  const closeBtn=`<div style="position:absolute;top:4px;right:4px"><button onclick="this.closest('.dash-panel').remove()" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:10px">✕</button></div>`;
+  try{
+    panel.innerHTML=closeBtn+vt.fn(_vizData,_vizFilters);
+  }catch(e){panel.innerHTML=closeBtn+'<p style="color:var(--rd);font-size:11px">Error: '+e.message+'</p>';}
+  container.appendChild(panel);
+  setTimeout(animKPIs,60);
+}
+
+// ===== V7: DATA VERSION SNAPSHOTS =====
+async function showSnapshots(){
+  try{
+    const db=await openDB();
+    const tx=db.transaction('snapshots','readonly');
+    const store=tx.objectStore('snapshots');
+    const req=store.getAll();
+    req.onsuccess=()=>{
+      const snaps=req.result||[];
+      let h=`<p><b>📸 Data Snapshots / Versiones de Datos</b></p>`;
+      if(!snaps.length){h+=`<p style="color:var(--tx3)">No snapshots yet. Import data to create snapshots automatically.</p>`;addM(h,false);return;}
+      h+=`<div class="tw"><table><thead><tr><th>Timestamp</th><th>3M</th><th>DC</th><th>12M</th><th>Total</th><th>Cost</th></tr></thead><tbody>`;
+      snaps.sort((a,b)=>b.id.localeCompare(a.id));
+      snaps.forEach(s=>{
+        h+=`<tr><td>${s.timestamp}</td><td>${fN(s.counts.m3)}</td><td>${fN(s.counts.dc)}</td><td>${fN(s.counts.m12)}</td><td>${fN(s.counts.total)}</td><td>${f$(s.totalCost)}</td></tr>`;
+      });
+      h+=`</tbody></table></div>`;
+      h+=`<span class="st">Data Versioning · ${snaps.length} snapshots</span>`;
+      addM(h,false);
+    };
+  }catch(e){addM('<p>Error loading snapshots: '+e.message+'</p>',false);}
+}
+
+// History loaded on init
+loadHistory();
 </script>
 </body>
 </html>
