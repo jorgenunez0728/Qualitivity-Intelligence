@@ -80,6 +80,14 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .lo{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:14px}
 .lr{width:44px;height:44px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+@keyframes barGrow{from{max-width:0}to{max-width:var(--tw)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cellPop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes dotPop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+.bf{animation:barGrow .6s cubic-bezier(.25,.8,.25,1) both}
+.hmc{animation:cellPop .3s ease both}
+.scatter-dot{animation:dotPop .4s cubic-bezier(.34,1.56,.64,1) both}
+.br{animation:fadeUp .4s ease both}
 .lo p{color:var(--tx2);font-size:13px}
 @media(max-width:768px){.pills{display:none}.kstrip{display:none}.m{max-width:98%}.bl{width:110px;font-size:9px}.dst{display:none}.ir textarea{font-size:16px}}
 @media(max-width:480px){.cps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}.cp{white-space:nowrap;flex-shrink:0}}
@@ -515,6 +523,14 @@ if(/climate\s*correlat|correlat.*climat|correlacion.*clima|clima.*correlaci|기�
   I.type='snapshots';
 } else if(/viz\s*studio|estudio|combina|combine|mixer|mezcla|customize|personaliza|drag|swap|mix\s*viz|studio/.test(lo)){
   I.type='vizstudio';
+} else if(/what.?if|simulad|savings|ahorro|si\s*reduci|cost\s*reduc|절감/.test(lo)){
+  I.type='whatif';
+} else if(/flow|flujo|sankey|pathway|ruta.*falla|경로/.test(lo)&&!/cash|caja/.test(lo)){
+  I.type='sankey';
+} else if(/dealer\s*score|scorecard\s*dealer|evaluar\s*dealer|radar.*dealer|딜러\s*평가|dealer\s*radar|dealer\s*perf/.test(lo)){
+  I.type='dealerscore';
+} else if(/present|modo\s*present|demo\s*mode|fullscreen|pantalla\s*completa|프레젠테이션/.test(lo)){
+  I.type='presentation';
 } else if(/world\s*map|global\s*map|mapa\s*mundo|mapa\s*global|all\s*markets|todos.*mercados|세계\s*지도/.test(lo)){
   I.type='worldmap';
 } else if(/\bmexi[ck]o\s*map|mapa\s*mexi[ck]o|멕시코\s*지도/.test(lo)){
@@ -689,7 +705,7 @@ function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')).map(
 function dsl(){return aDS==='all'?'All':'Sheet '+aDS;}
 
 // ===== VIZ BUILDERS =====
-function mkBar(items,metric,title){
+function mkBar(items,metric,title,rawData){
   if(!items.length)return'<p>No data.</p>';
   const mx=items[0].value;
   let h=`<div class="cb"><div class="ct">${esc(title)}</div>`;
@@ -697,7 +713,8 @@ function mkBar(items,metric,title){
   items.forEach((it,i)=>{
     const p=mx>0?(it.value/mx*100):0;
     const vs=metric==='cost'?f$(it.value):fN(it.value,metric==='mileage'?0:0);
-    h+=`<div class="br br-click" onclick="drill('partNM','${esc(it.key).replace(/'/g,"\\'")}')" title="Click to drill into ${esc(it.key)}"><span class="bl" title="${esc(it.key)}">${i+1}. ${esc(tr(it.key,28))}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[i%C.length]}"></div></div><span class="bv">${vs}</span><span class="bp">${pc(it.value,tot)}</span></div>`;
+    const spk=rawData?mkSpk(rawData,'partNM',it.key):'';
+    h+=`<div class="br br-click" style="animation-delay:${i*0.05}s" onclick="drill('partNM','${esc(it.key).replace(/'/g,"\\'")}')" title="Click to drill into ${esc(it.key)}"><span class="bl" title="${esc(it.key)}">${i+1}. ${esc(tr(it.key,22))}</span>${spk}<div class="bt"><div class="bf" style="--tw:${p}%;width:${p}%;background:${C[i%C.length]};animation-delay:${i*0.06}s"></div></div><span class="bv">${vs}</span><span class="bp">${pc(it.value,tot)}</span></div>`;
   });
   h+='</div>';return h;
 }
@@ -725,7 +742,7 @@ function mkHeat(data,rF,cF,title){
       const v=grid[row+'||'+col]||0;
       const ci=mx>0?Math.min(Math.floor(v/mx*10),10):0;
       const bg=HC[ci];const fg=ci>4?'#fff':'var(--tx3)';
-      h+=`<div class="hmc" style="background:${bg};color:${fg}" title="${esc(row)} × ${esc(col)}: ${v}">${v||''}</div>`;
+      h+=`<div class="hmc" style="background:${bg};color:${fg};animation-delay:${(rows.indexOf(row)*0.03+cols.indexOf(col)*0.02).toFixed(2)}s" title="${esc(row)} × ${esc(col)}: ${v}">${v||''}</div>`;
     });
   });
   h+='</div></div>';return h;
@@ -738,7 +755,7 @@ function mkPareto(items,title){
   let h=`<div class="cb"><div class="ct">${esc(title)} — Pareto</div>`;
   items.forEach((it,i)=>{
     cum+=it.value;const p=mx>0?(it.value/mx*100):0;const cp=tot>0?(cum/tot*100):0;
-    h+=`<div class="br"><span class="bl">${esc(tr(it.key,24))}</span><div class="bt" style="position:relative"><div class="bf" style="width:${p}%;background:${C[i%C.length]}"></div><div style="position:absolute;right:4px;top:2px;font-size:9px;color:var(--yl);font-family:'JetBrains Mono',monospace">${cp.toFixed(0)}%</div></div><span class="bv">${fN(it.value)}</span></div>`;
+    h+=`<div class="br" style="animation-delay:${i*0.05}s"><span class="bl">${esc(tr(it.key,24))}</span><div class="bt" style="position:relative"><div class="bf" style="--tw:${p}%;width:${p}%;background:${C[i%C.length]};animation-delay:${i*0.06}s"></div><div style="position:absolute;right:4px;top:2px;font-size:9px;color:var(--yl);font-family:'JetBrains Mono',monospace">${cp.toFixed(0)}%</div></div><span class="bv">${fN(it.value)}</span></div>`;
   });
   let c80=0,n80=0;for(const it of items){c80+=it.value;n80++;if(c80/tot>=.8)break;}
   h+=`<p style="font-size:11px;color:var(--yl);margin-top:8px">⚡ ${n80} of ${items.length} items = 80% (${fN(c80)} / ${fN(tot)})</p></div>`;
@@ -750,15 +767,16 @@ function mkDonut(items,title){
   const tot=items.reduce((s,x)=>s+x.value,0);
   const t8=items.slice(0,8);const ov=items.slice(8).reduce((s,x)=>s+x.value,0);
   if(ov>0)t8.push({key:'Others',value:ov});
-  let svg='<svg viewBox="0 0 120 120" width="140" height="140">';
-  let a=0;
+  const R=42,CX=60,CY=60,CIRC=2*Math.PI*R;
+  let svg=`<svg viewBox="0 0 120 120" width="140" height="140">`;
+  let offset=0;
   t8.forEach((it,i)=>{
-    const sl=tot>0?(it.value/tot)*360:0;
-    const s=a*Math.PI/180,e=(a+sl)*Math.PI/180;
-    svg+=`<path d="M60,60 L${60+50*Math.cos(s)},${60+50*Math.sin(s)} A50,50 0 ${sl>180?1:0},1 ${60+50*Math.cos(e)},${60+50*Math.sin(e)} Z" fill="${C[i%C.length]}" opacity=".85"/>`;
-    a+=sl;
+    const frac=tot>0?it.value/tot:0;
+    const len=frac*CIRC;
+    svg+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${C[i%C.length]}" stroke-width="16" stroke-dasharray="${len} ${CIRC-len}" stroke-dashoffset="${-offset}" opacity=".85" style="transform:rotate(-90deg);transform-origin:center;animation:sweepIn .8s cubic-bezier(.25,.8,.25,1) ${i*0.1}s both;--sl:${CIRC}"/>`;
+    offset+=len;
   });
-  svg+=`<circle cx="60" cy="60" r="28" fill="var(--sf2)"/><text x="60" y="58" text-anchor="middle" fill="var(--tx)" font-size="14" font-weight="700" font-family="JetBrains Mono">${fN(tot)}</text><text x="60" y="70" text-anchor="middle" fill="var(--tx3)" font-size="7">claims</text></svg>`;
+  svg+=`<circle cx="${CX}" cy="${CY}" r="28" fill="var(--sf2)"/><text x="${CX}" y="58" text-anchor="middle" fill="var(--tx)" font-size="14" font-weight="700" font-family="JetBrains Mono">${fN(tot)}</text><text x="${CX}" y="70" text-anchor="middle" fill="var(--tx3)" font-size="7">claims</text></svg>`;
   let lg='<div class="dl">';
   t8.forEach((it,i)=>lg+=`<div class="di"><div class="dd" style="background:${C[i%C.length]}"></div>${esc(tr(it.key,25))} <span style="color:var(--tx3);font:10px 'JetBrains Mono',monospace">${it.value} (${pc(it.value,tot)})</span></div>`);
   lg+='</div>';
@@ -778,7 +796,7 @@ function mkScatter(data,title){
   h+=`<div style="position:absolute;left:2px;top:50%;transform:rotate(-90deg);font-size:9px;color:var(--tx3)">Cost</div>`;
   sub.forEach(r=>{
     const x=50+((r.mileage||0)/mxM)*450;const y=H-((r.totalCost||0)/mxC)*(H-20);
-    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:7px;height:7px;background:${pc2[r.proj]||'#fb923c'}" title="${r.partNM||''} | ${r.proj||''} | ${fN(r.mileage)}km | ${f$(r.totalCost)}"></div>`;
+    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:7px;height:7px;background:${pc2[r.proj]||'#fb923c'};animation-delay:${(sub.indexOf(r)*0.008).toFixed(3)}s" title="${r.partNM||''} | ${r.proj||''} | ${fN(r.mileage)}km | ${f$(r.totalCost)}"></div>`;
   });
   h+=`<div style="position:absolute;top:4px;right:8px;display:flex;gap:10px">`;
   for(const[k,c]of Object.entries(pc2))h+=`<span style="font-size:9px;color:${c}">● ${k}</span>`;
@@ -791,7 +809,7 @@ function mkTreemap(items,title){
   let h=`<div class="cb"><div class="ct">${esc(title)}</div><div style="display:flex;flex-wrap:wrap;gap:3px">`;
   items.slice(0,12).forEach((it,i)=>{
     const p=tot>0?(it.value/tot*100):0;const c=C[i%C.length];
-    h+=`<div style="flex:${Math.max(p,5)};min-width:${Math.max(p*3,60)}px;background:${c}22;border:1px solid ${c}44;border-radius:6px;padding:8px;min-height:50px" title="${esc(it.key)}: ${it.value}"><div style="font-size:9px;color:${c};font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tr(it.key,20))}</div><div style="font:700 16px 'JetBrains Mono',monospace;color:${c}">${fN(it.value)}</div><div style="font-size:8px;color:var(--tx3)">${p.toFixed(1)}%</div></div>`;
+    h+=`<div style="flex:${Math.max(p,5)};min-width:${Math.max(p*3,60)}px;background:${c}22;border:1px solid ${c}44;border-radius:6px;padding:8px;min-height:50px;animation:cellPop .4s cubic-bezier(.34,1.56,.64,1) ${i*0.06}s both" title="${esc(it.key)}: ${it.value}"><div style="font-size:9px;color:${c};font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tr(it.key,20))}</div><div style="font:700 16px 'JetBrains Mono',monospace;color:${c}">${fN(it.value)}</div><div style="font-size:8px;color:var(--tx3)">${p.toFixed(1)}%</div></div>`;
   });
   h+='</div></div>';return h;
 }
@@ -1234,7 +1252,7 @@ function genRanking(I){
   if(I.viz==='pareto')h+=mkPareto(items,mL);
   else if(I.viz==='donut')h+=mkDonut(items,mL);
   else if(I.viz==='treemap')h+=mkTreemap(items,mL);
-  else{h+=mkBar(items,I.metric,mL);if(items.length>=8)h+=mkPareto(items,'Pareto');}
+  else{h+=mkBar(items,I.metric,mL,data);if(items.length>=8)h+=mkPareto(items,'Pareto');}
   h+=mkTbl(items,[{l:I.groupBy,k:'key',f:v=>esc(tr(v,35))},{l:'Claims',k:'count',f:v=>fN(v)},{l:'Total Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'}]);
   h+=autoMarketMap(I,data);
   _vizData=data;_vizFilters=I.filters;_vizGroupBy=I.groupBy;_vizMetric=I.metric;
@@ -2425,12 +2443,392 @@ function genPeriodCompare(I){
 }
 
 // ===== QUERY PROCESSOR =====
+// ===== FEATURE: SPARKLINE TREND INDICATORS =====
+function mkSpk(allData,key,val){
+  // Build monthly counts for this key value
+  const months=[...new Set(allData.map(r=>r.confMonth))].filter(Boolean).sort();
+  if(months.length<2)return'';
+  const counts=months.map(m=>allData.filter(r=>r.confMonth===m&&(key?r[key]===val:true)).reduce((s,r)=>s+(r.claims||1),0));
+  const mx=Math.max(...counts,1);const mn=Math.min(...counts,0);
+  const W=56,H=16,pts=counts.map((v,i)=>`${(i/(counts.length-1))*W},${H-((v-mn)/(mx-mn||1))*H}`).join(' ');
+  // Slope for color
+  const n=counts.length,sx=counts.reduce((_,__,i)=>_+i,0),sy=counts.reduce((s,v)=>s+v,0);
+  const sxy=counts.reduce((s,v,i)=>s+i*v,0),sx2=counts.reduce((s,_,i)=>s+i*i,0);
+  const slope=(n*sxy-sx*sy)/(n*sx2-sx*sx||1);
+  const col=slope>0.3?'#f87171':slope<-0.3?'#34d399':'#94a3b8';
+  return`<svg width="${W}" height="${H}" style="vertical-align:middle;margin:0 4px"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round"/><circle cx="${W}" cy="${H-((counts[counts.length-1]-mn)/(mx-mn||1))*H}" r="2" fill="${col}"/></svg>`;
+}
+
+// ===== FEATURE: AI NARRATIVE ENGINE =====
+function narrate(data,context){
+  if(!data||data.length<3)return'';
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const parts=ag(data,'partNM','count');
+  const topPart=parts[0];
+  const nations=ag(data,'nation','count');
+  const topNation=nations[0];
+  const dealers=[...new Set(data.map(r=>r.dealer))].length;
+  const avgCost=tc/data.length;
+  const topPartPct=topPart?(topPart.value/data.length*100):0;
+  const topPartCost=data.filter(r=>r.partNM===topPart?.key).reduce((s,r)=>s+(r.totalCost||0),0);
+  // Early-life detection
+  const earlyLife=data.filter(r=>(r.mileage||99999)<5000).length;
+  const earlyPct=(earlyLife/data.length*100);
+  // Build narrative
+  let txt=`<blockquote style="border-left:3px solid var(--ac);padding:10px 14px;margin:12px 0;background:var(--sf2);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:var(--tx2)">`;
+  txt+=`<b>Executive Summary</b><br>`;
+  txt+=`This dataset contains <b>${fN(data.length)}</b> warranty claims totaling <b>${f$(tc)}</b>`;
+  if(context)txt+=` ${context}`;
+  txt+=`. `;
+  if(topPart){
+    txt+=`<b>${esc(topPart.key)}</b> is the primary cost driver, representing <b>${topPartPct.toFixed(0)}%</b> of claim volume`;
+    txt+=` with <b>${f$(topPartCost)}</b> in warranty cost`;
+    if(topPartPct>25)txt+=` — this concentration warrants immediate supplier quality review`;
+    else if(topPartPct>15)txt+=` — recommended for engineering investigation within 30 days`;
+    txt+=`. `;
+  }
+  if(dealers>0){
+    const topDealers=ag(data,'dealer','count').slice(0,3);
+    const top3Pct=topDealers.reduce((s,d)=>s+d.value,0)/data.length*100;
+    if(top3Pct>40)txt+=`Top 3 dealers account for <b>${top3Pct.toFixed(0)}%</b> of claims — consider targeted dealer audit. `;
+  }
+  if(earlyPct>20)txt+=`<span style="color:var(--rd)"><b>${earlyPct.toFixed(0)}%</b> of failures occur under 5,000km</span>, indicating potential manufacturing or assembly defect. `;
+  if(topNation&&nations.length>1)txt+=`Geographically, <b>${esc(topNation.key)}</b> leads with <b>${fN(topNation.value)}</b> claims (${(topNation.value/data.length*100).toFixed(0)}%). `;
+  // Recommendation
+  txt+=`<br><br><b>Recommended Actions:</b><br>`;
+  if(topPartPct>25)txt+=`1. Immediate quality alert for ${esc(topPart?.key||'top part')} — convene supplier review<br>`;
+  else txt+=`1. Monitor ${esc(topPart?.key||'top part')} trend — set threshold alert at +20% MoM<br>`;
+  if(earlyPct>20)txt+=`2. Launch early-life failure investigation — audit assembly process<br>`;
+  else txt+=`2. Continue preventive monitoring of early-life failure rate (currently ${earlyPct.toFixed(0)}%)<br>`;
+  txt+=`3. Evaluate top-cost dealers for training and process improvement opportunities`;
+  txt+=`</blockquote>`;
+  return txt;
+}
+
+// ===== FEATURE: SMART SUGGESTIONS =====
+function suggest(I,data){
+  const suggestions=[];
+  const parts=ag(data||[],'partNM','count');
+  const topPart=parts[0]?.key;
+  const topPartSafe=topPart?esc(topPart).replace(/'/g,"\\'"):'';
+  switch(I.type){
+    case'ranking':case'pareto':case'donut':
+      if(topPart)suggestions.push({l:`Drill into ${tr(topPart,25)}`,q:`Analysis ${topPart}`});
+      if(topPart)suggestions.push({l:`Forecast ${tr(topPart,20)} trend`,q:`Forecast trend ${topPart}`});
+      suggestions.push({l:'Flag dealer anomalies',q:'Flag dealer anomalies'});
+      break;
+    case'analysis':
+      suggestions.push({l:'Forecast this part',q:`Forecast ${I.filters.partNM||'trend'}`});
+      suggestions.push({l:'Which dealers are affected?',q:`Anomalies ${I.filters.partNM||''}`});
+      suggestions.push({l:'Climate correlation',q:`Climate correlation analysis`});
+      break;
+    case'map':case'mexicomap':case'canadamap':case'worldmap':
+      suggestions.push({l:'Climate correlation analysis',q:'Climate correlation analysis'});
+      suggestions.push({l:'Dealer anomaly detection',q:'Flag dealer anomalies'});
+      if(topPart)suggestions.push({l:`Why is ${tr(topPart,20)} #1?`,q:`Analysis ${topPart}`});
+      break;
+    case'anomaly':
+      if(topPart)suggestions.push({l:`Investigate ${tr(topPart,20)}`,q:`Analysis ${topPart}`});
+      suggestions.push({l:'Supplier risk scorecard',q:'Supplier risk scorecard'});
+      suggestions.push({l:'What-if cost reduction',q:'What if savings simulator'});
+      break;
+    case'climate':
+      suggestions.push({l:'HVAC/AC system breakdown',q:'HVAC analysis'});
+      suggestions.push({l:'USA map with temperature',q:'Map USA temperature'});
+      suggestions.push({l:'México map with climate',q:'Mexico map temperature'});
+      break;
+    case'insights':
+      suggestions.push({l:'Cost savings simulator',q:'What if savings simulator'});
+      suggestions.push({l:'Failure flow analysis',q:'Failure flow sankey'});
+      if(topPart)suggestions.push({l:`Deep dive: ${tr(topPart,20)}`,q:`Analysis ${topPart}`});
+      break;
+    case'forecast':
+      suggestions.push({l:'What-if savings simulator',q:'What if savings simulator'});
+      suggestions.push({l:'Period comparison 3M vs 12M',q:'Period comparison 3M vs 12M'});
+      suggestions.push({l:'Intelligence briefing',q:'Intelligence briefing'});
+      break;
+    default:
+      suggestions.push({l:'Intelligence briefing',q:'Intelligence briefing'});
+      suggestions.push({l:'What-if cost savings',q:'What if savings simulator'});
+      suggestions.push({l:'Failure flow diagram',q:'Failure flow sankey'});
+  }
+  if(!suggestions.length)return'';
+  let h='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px">';
+  h+='<span style="font-size:9px;color:var(--tx3);align-self:center">Next:</span>';
+  suggestions.slice(0,3).forEach(s=>{
+    h+=`<button onclick="inp.value='${esc(s.q).replace(/'/g,"\\'")}';send();" style="background:transparent;border:1px solid var(--ac);color:var(--ac);padding:4px 10px;border-radius:14px;font:11px 'DM Sans',sans-serif;cursor:pointer;transition:all .15s" onmouseenter="this.style.background='var(--acd)'" onmouseleave="this.style.background='transparent'">${esc(s.l)}</button>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+// ===== FEATURE: WHAT-IF SAVINGS SIMULATOR =====
+function genWhatIf(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No data for simulation.</p>';
+  const fd=fdsc(I.filters);
+  const topCost=ag(data,'partNM','cost').slice(0,8);
+  const totalCost=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const uid='wif'+Date.now();
+  let h=`<p><b>What-If Savings Simulator / Simulador de Ahorros</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  h+=`<p style="font-size:11px;color:var(--tx2);margin-bottom:8px">Drag sliders to simulate claim reduction → see projected annual savings.</p>`;
+  h+=`<div id="${uid}_kpi" class="kg"><div class="kc kc-anim"><div class="kcl">Current Annual Cost</div><div class="kcv" style="color:var(--rd)">${f$(totalCost*4)}</div><div class="kcs">Projected from ${dsl()}</div></div><div class="kc kc-anim" style="animation-delay:.06s"><div class="kcl">Projected Savings</div><div class="kcv" style="color:var(--gn)" id="${uid}_sav">$0</div><div class="kcs">Annual estimate</div></div><div class="kc kc-anim" style="animation-delay:.12s"><div class="kcl">New Annual Cost</div><div class="kcv" style="color:var(--ac)" id="${uid}_new">${f$(totalCost*4)}</div></div></div>`;
+  h+=`<div class="cb" style="padding:14px">`;
+  topCost.forEach((it,i)=>{
+    const annCost=it.value*4;
+    h+=`<div style="margin-bottom:14px;animation:fadeUp .4s ease ${i*0.06}s both">`;
+    h+=`<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;color:var(--tx)">${esc(tr(it.key,30))}</span><span style="font-size:10px;color:var(--tx3)">${f$(annCost)}/yr</span></div>`;
+    h+=`<div style="display:flex;align-items:center;gap:8px"><input type="range" min="0" max="100" value="0" data-cost="${annCost}" class="${uid}_sl" style="flex:1;accent-color:var(--ac);height:6px" oninput="_wifCalc('${uid}')"><span class="${uid}_pct" style="font:700 12px 'JetBrains Mono',monospace;color:var(--gn);min-width:36px">0%</span></div>`;
+    h+=`<div style="font-size:9px;color:var(--tx3);margin-top:2px">Saving: <span class="${uid}_sv" style="color:var(--gn)">$0</span></div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  h+=narrate(data,`across ${fN(topCost.length)} top cost drivers`);
+  h+=`<script>function _wifCalc(id){let tot=0;document.querySelectorAll('.'+id+'_sl').forEach((sl,i)=>{const pct=parseInt(sl.value);const save=parseFloat(sl.dataset.cost)*pct/100;tot+=save;const pcts=document.querySelectorAll('.'+id+'_pct');const svs=document.querySelectorAll('.'+id+'_sv');if(pcts[i])pcts[i].textContent=pct+'%';if(svs[i])svs[i].textContent='$'+Math.round(save).toLocaleString();});document.getElementById(id+'_sav').textContent='$'+Math.round(tot).toLocaleString();document.getElementById(id+'_new').textContent='$'+Math.round(${totalCost*4}-tot).toLocaleString();}</script>`;
+  h+=suggest(I,data);
+  h+=`<span class="st">What-If Simulator · ${fN(data.length)} claims · ${fN(topCost.length)} cost drivers</span>`;
+  return h;
+}
+
+// ===== FEATURE: SANKEY FLOW DIAGRAM =====
+function mkSankey(data,title){
+  if(!data||data.length<5)return'<p>Need more data for flow diagram.</p>';
+  // Build nodes: System → Part → FailureMode → Nation
+  const systems=ag(data,'system','count').slice(0,6);
+  const parts=ag(data,'partNM','count').slice(0,8);
+  const modes=ag(data,'natName','count').slice(0,6);
+  const nations=ag(data,'nation','count').slice(0,5);
+  if(!systems.length||!parts.length)return'';
+  const W=700,H=400,PAD=20,COL_W=100,NODE_PAD=4;
+  const cols=[systems,parts,modes,nations];
+  const colX=[PAD,PAD+170,PAD+370,W-COL_W-PAD];
+  const colLabels=['System','Part','Failure Mode','Market'];
+  // Calculate node positions
+  function layoutCol(items,x,totalH){
+    const usable=totalH-PAD*2-(items.length-1)*NODE_PAD;
+    const tot=items.reduce((s,it)=>s+it.value,0);
+    let y=PAD;
+    return items.map(it=>{
+      const h=Math.max(usable*(it.value/tot),12);
+      const node={key:it.key,value:it.value,x,y,h,w:COL_W};
+      y+=h+NODE_PAD;
+      return node;
+    });
+  }
+  const nodes=cols.map((c,i)=>layoutCol(c,colX[i],H));
+  // Build flows between adjacent columns
+  function buildFlows(srcNodes,dstNodes,srcField,dstField){
+    const flows=[];
+    for(const src of srcNodes){
+      const srcData=data.filter(r=>r[srcField]===src.key);
+      for(const dst of dstNodes){
+        const count=srcData.filter(r=>r[dstField]===dst.key).reduce((s,r)=>s+(r.claims||1),0);
+        if(count>0)flows.push({src,dst,value:count});
+      }
+    }
+    return flows;
+  }
+  const flows1=buildFlows(nodes[0],nodes[1],'system','partNM');
+  const flows2=buildFlows(nodes[1],nodes[2],'partNM','natName');
+  const flows3=buildFlows(nodes[2],nodes[3],'natName','nation');
+  const allFlows=[...flows1,...flows2,...flows3];
+  const maxFlow=Math.max(...allFlows.map(f=>f.value),1);
+  // SVG
+  let svg=`<svg viewBox="0 0 ${W} ${H+30}" width="100%" style="max-width:${W}px">`;
+  // Column labels
+  colLabels.forEach((l,i)=>svg+=`<text x="${colX[i]+COL_W/2}" y="12" text-anchor="middle" fill="var(--tx3)" font-size="10" font-family="DM Sans">${l}</text>`);
+  // Flows (curved paths)
+  allFlows.forEach((f,fi)=>{
+    const srcMidY=f.src.y+f.src.h/2;
+    const dstMidY=f.dst.y+f.dst.h/2;
+    const srcX=f.src.x+f.src.w;
+    const dstX=f.dst.x;
+    const cpx1=srcX+(dstX-srcX)*0.4;
+    const cpx2=srcX+(dstX-srcX)*0.6;
+    const thick=Math.max(1,Math.min(20,(f.value/maxFlow)*20));
+    const ci=nodes[0].findIndex(n=>n.key===f.src.key);
+    const col=C[ci>=0?ci%C.length:fi%C.length];
+    svg+=`<path d="M${srcX},${srcMidY} C${cpx1},${srcMidY} ${cpx2},${dstMidY} ${dstX},${dstMidY}" fill="none" stroke="${col}" stroke-width="${thick}" opacity=".3" style="transition:opacity .2s"><title>${esc(f.src.key)} → ${esc(f.dst.key)}: ${f.value}</title></path>`;
+  });
+  // Nodes
+  nodes.forEach((col,ci)=>col.forEach((n,ni)=>{
+    const c=C[ci===0?ni%C.length:(ci===1?ni%C.length:ci*2+ni)%C.length];
+    svg+=`<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="${c}" opacity=".7"/>`;
+    if(n.h>14)svg+=`<text x="${n.x+n.w/2}" y="${n.y+n.h/2+3}" text-anchor="middle" fill="#fff" font-size="${n.h>20?'9':'7'}" font-family="DM Sans">${esc(tr(n.key,14))}</text>`;
+  }));
+  svg+='</svg>';
+  return`<div class="cb"><div class="ct">${esc(title)}</div><div style="overflow-x:auto">${svg}</div></div>`;
+}
+
+function genSankey(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No data.</p>';
+  const fd=fdsc(I.filters);
+  let h=`<p><b>Failure Flow Analysis / Flujo de Fallas</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Claims',fN(data.length),'var(--ac)'],['Systems',fN([...new Set(data.map(r=>r.system))].length),'var(--pu)'],['Parts',fN([...new Set(data.map(r=>r.partNM))].length),'var(--or)'],['Markets',fN([...new Set(data.map(r=>r.nation))].length),'var(--gn)']]);
+  h+=mkSankey(data,'System → Part → Failure Mode → Market');
+  h+=narrate(data,'visualized as failure flow pathways');
+  h+=suggest(I,data);
+  h+=`<span class="st">Sankey Flow · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+// ===== FEATURE: DEALER SCORECARD + RADAR CHART =====
+function mkRadar(dealers,title){
+  if(!dealers.length)return'';
+  const AXES=['Volume','Avg Cost','Part Diversity','Early-Life %','Concentration','Cost Total'];
+  const N=AXES.length;
+  const CX=150,CY=150,R=120;
+  let svg=`<svg viewBox="0 0 300 310" width="300" style="max-width:100%">`;
+  // Concentric pentagons
+  [0.2,0.4,0.6,0.8,1.0].forEach(s=>{
+    let pts='';
+    for(let i=0;i<N;i++){const a=(Math.PI*2*i/N)-Math.PI/2;pts+=`${CX+R*s*Math.cos(a)},${CY+R*s*Math.sin(a)} `;}
+    svg+=`<polygon points="${pts}" fill="none" stroke="var(--bd)" stroke-width=".5"/>`;
+  });
+  // Axis lines + labels
+  for(let i=0;i<N;i++){
+    const a=(Math.PI*2*i/N)-Math.PI/2;
+    const ex=CX+R*Math.cos(a),ey=CY+R*Math.sin(a);
+    svg+=`<line x1="${CX}" y1="${CY}" x2="${ex}" y2="${ey}" stroke="var(--bd)" stroke-width=".5"/>`;
+    const lx=CX+(R+18)*Math.cos(a),ly=CY+(R+18)*Math.sin(a);
+    svg+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--tx3)" font-size="8" font-family="DM Sans">${AXES[i]}</text>`;
+  }
+  // Dealer polygons
+  dealers.slice(0,5).forEach((d,di)=>{
+    let pts='';
+    d.scores.forEach((s,i)=>{
+      const a=(Math.PI*2*i/N)-Math.PI/2;
+      pts+=`${CX+R*(s/100)*Math.cos(a)},${CY+R*(s/100)*Math.sin(a)} `;
+    });
+    svg+=`<polygon points="${pts}" fill="${C[di%C.length]}" fill-opacity=".15" stroke="${C[di%C.length]}" stroke-width="2" stroke-opacity=".8"><title>${d.dealer}</title></polygon>`;
+  });
+  svg+='</svg>';
+  // Legend
+  let lg='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">';
+  dealers.slice(0,5).forEach((d,i)=>lg+=`<span style="font-size:10px;color:${C[i%C.length]}">● ${esc(tr(d.dealer,15))}</span>`);
+  lg+='</div>';
+  return`<div class="cb"><div class="ct">${esc(title)}</div><div style="display:flex;justify-content:center">${svg}</div>${lg}</div>`;
+}
+
+function genDealerScore(I){
+  const data=flt(gDS(),I.filters);
+  if(data.length<10)return'<p>Need more data for dealer scoring.</p>';
+  const fd=fdsc(I.filters);
+  // Compute per-dealer metrics
+  const dlrMap={};
+  for(const r of data){
+    const d=r.dealer;if(!d)continue;
+    if(!dlrMap[d])dlrMap[d]={dealer:d,claims:0,cost:0,parts:new Set(),vins:new Set(),earlyLife:0,nation:r.nation};
+    dlrMap[d].claims++;dlrMap[d].cost+=(r.totalCost||0);dlrMap[d].parts.add(r.partNM);
+    if(r.vin)dlrMap[d].vins.add(r.vin);
+    if((r.mileage||99999)<5000)dlrMap[d].earlyLife++;
+  }
+  const dealers=Object.values(dlrMap).filter(d=>d.claims>=3).map(d=>{
+    const topPart=data.filter(r=>r.dealer===d.dealer);
+    const partCounts=ag(topPart,'partNM','count');
+    const concentration=partCounts[0]?(partCounts[0].value/d.claims*100):0;
+    // Count repeat VINs
+    const vinCounts={};topPart.forEach(r=>{if(r.vin){vinCounts[r.vin]=(vinCounts[r.vin]||0)+1;}});
+    const repeatVins=Object.values(vinCounts).filter(c=>c>=2).length;
+    const repeatRate=d.vins.size>0?(repeatVins/d.vins.size*100):0;
+    return{...d,parts:d.parts.size,vins:d.vins.size,avgCost:d.cost/d.claims,earlyPct:d.claims>0?(d.earlyLife/d.claims*100):0,concentration,repeatRate};
+  });
+  if(!dealers.length)return'<p>Not enough dealer data for scoring.</p>';
+  // Normalize to 0-100
+  const maxClaims=Math.max(...dealers.map(d=>d.claims));
+  const maxAvgCost=Math.max(...dealers.map(d=>d.avgCost));
+  const maxParts=Math.max(...dealers.map(d=>d.parts));
+  const maxCost=Math.max(...dealers.map(d=>d.cost));
+  const scored=dealers.map(d=>({
+    ...d,
+    scores:[
+      Math.min(100,(d.claims/maxClaims)*100),
+      Math.min(100,(d.avgCost/maxAvgCost)*100),
+      Math.min(100,(d.parts/maxParts)*100),
+      Math.min(100,d.earlyPct),
+      Math.min(100,d.concentration),
+      Math.min(100,(d.cost/maxCost)*100)
+    ],
+    composite:((d.claims/maxClaims)*25+(d.avgCost/maxAvgCost)*20+(d.parts/maxParts)*15+d.earlyPct*0.15+d.concentration*0.15+(d.cost/maxCost)*10)
+  })).sort((a,b)=>b.composite-a.composite);
+  let h=`<p><b>Dealer Performance Scorecard / Scorecard de Dealers</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Dealers Scored',fN(scored.length),'var(--ac)'],['Highest Risk',esc(tr(scored[0]?.dealer||'',15)),'var(--rd)'],['Lowest Risk',esc(tr(scored[scored.length-1]?.dealer||'',15)),'var(--gn)']]);
+  h+=mkRadar(scored,'Top 5 Highest-Risk Dealers — Radar Profile');
+  // Table
+  h+=mkTbl(scored.slice(0,20).map((d,i)=>({rank:i+1,dealer:d.dealer,claims:d.claims,avgCost:d.avgCost,parts:d.parts,earlyPct:d.earlyPct,concentration:d.concentration,composite:d.composite,nation:d.nation||''})),[
+    {l:'#',k:'rank',f:v=>v},
+    {l:'Dealer',k:'dealer',f:v=>esc(tr(v,15))},
+    {l:'Claims',k:'claims',f:v=>`<b>${fN(v)}</b>`},
+    {l:'Avg $',k:'avgCost',f:v=>f$(v)},
+    {l:'Parts',k:'parts',f:v=>v},
+    {l:'Early%',k:'earlyPct',f:v=>`<span style="color:${v>25?'var(--rd)':v>15?'var(--or)':'var(--gn)'}">${v.toFixed(0)}%</span>`},
+    {l:'Score',k:'composite',f:v=>`<span style="color:${v>60?'var(--rd)':v>40?'var(--or)':'var(--gn)'}">${v.toFixed(0)}</span>`}
+  ]);
+  h+=narrate(data,'evaluated through 6-axis dealer quality scoring');
+  h+=suggest(I,data);
+  h+=`<span class="st">Dealer Scorecard · ${fN(scored.length)} dealers · ${fN(data.length)} claims</span>`;
+  return h;
+}
+
+// ===== FEATURE: PRESENTATION MODE =====
+function genPresentation(I){
+  const data=flt(gDS(),I.filters);
+  const all=[...D['3M'],...D['DC'],...D['12M']];
+  const tc=all.reduce((s,r)=>s+(r.totalCost||0),0);
+  const topParts=ag(all,'partNM','count').slice(0,10);
+  const topCost=ag(all,'partNM','cost').slice(0,8);
+  const bySys=ag(all,'system','count');
+  const byNation=ag(all,'nation','count');
+  const usData=all.filter(r=>r.nation==='U.S.A'&&r.state);
+  const mxData=all.filter(r=>r.nation==='Mexico');
+  // Build slides
+  const slides=[];
+  // Slide 1: Executive KPIs
+  slides.push(`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%">
+    <h1 style="font:700 36px 'JetBrains Mono',monospace;color:var(--ac);margin-bottom:30px">Qualitivity Intelligence</h1>
+    <div style="font-size:14px;color:var(--tx3);margin-bottom:40px">KMX Warranty Analytics · ${dsl()}</div>
+    ${mkKPIs([['Total Claims',fN(all.length),'var(--ac)','All datasets'],['Warranty Cost',f$(tc),'var(--rd)','Annualized: '+f$(tc*4)],['Top Defect',topParts[0]?.key||'—','var(--yl)',topParts[0]?.value+' claims'],['Markets',fN(byNation.length),'var(--gn)','Active regions']])}
+  </div>`);
+  // Slide 2: Top 10 Parts
+  slides.push(`<div><h2 style="color:var(--ac);margin-bottom:16px;font-size:20px">Top 10 Warranty Parts</h2>${mkBar(topParts,'count','Claims by Part')}</div>`);
+  // Slide 3: System & Market
+  slides.push(`<div><h2 style="color:var(--ac);margin-bottom:16px;font-size:20px">System & Market Distribution</h2><div style="display:flex;flex-wrap:wrap;gap:16px">${mkDonut(bySys,'By System')}${mkDonut(byNation,'By Market')}</div></div>`);
+  // Slide 4: Geographic
+  slides.push(`<div><h2 style="color:var(--ac);margin-bottom:16px;font-size:20px">Geographic Analysis</h2>${usData.length>5?mkMap(usData,'USA Claims',true):''}${mxData.length>3?mkMexicoMap(mxData,'México Claims'):''}</div>`);
+  // Slide 5: Cost drivers
+  slides.push(`<div><h2 style="color:var(--ac);margin-bottom:16px;font-size:20px">Cost Drivers — Warranty Savings Opportunity</h2>${mkBar(topCost,'cost','Annual Cost by Part')}${narrate(all,'across all markets and projects')}</div>`);
+  const uid='pres'+Date.now();
+  let h=`<div id="${uid}" style="background:var(--bg);padding:20px;border-radius:12px;min-height:500px;position:relative">`;
+  slides.forEach((sl,i)=>h+=`<div class="${uid}_slide" style="display:${i===0?'block':'none'};animation:fadeUp .5s ease both">${sl}</div>`);
+  h+=`<div style="position:absolute;bottom:10px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:12px">`;
+  h+=`<button onclick="_presNav('${uid}',-1)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px">← Prev</button>`;
+  h+=`<span id="${uid}_pg" style="font:12px 'JetBrains Mono',monospace;color:var(--tx3)">1 / ${slides.length}</span>`;
+  h+=`<button onclick="_presNav('${uid}',1)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px">Next →</button>`;
+  h+=`<button onclick="document.documentElement.requestFullscreen().catch(()=>{})" style="background:var(--acd);border:1px solid var(--ac);color:var(--ac);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px">Fullscreen</button>`;
+  h+=`</div>`;
+  h+=`<div style="position:absolute;bottom:0;left:0;height:3px;background:var(--ac);border-radius:2px;transition:width .3s" id="${uid}_bar" style="width:${100/slides.length}%"></div>`;
+  h+=`</div>`;
+  h+=`<script>window._presIdx=window._presIdx||{};window._presIdx['${uid}']=0;function _presNav(id,dir){const slides=document.querySelectorAll('.'+id+'_slide');const n=slides.length;let cur=window._presIdx[id]||0;slides[cur].style.display='none';cur=(cur+dir+n)%n;slides[cur].style.display='block';slides[cur].style.animation='none';slides[cur].offsetHeight;slides[cur].style.animation='fadeUp .5s ease both';window._presIdx[id]=cur;document.getElementById(id+'_pg').textContent=(cur+1)+' / '+n;const bar=document.getElementById(id+'_bar');if(bar)bar.style.width=((cur+1)/n*100)+'%';}</script>`;
+  h+=`<p style="margin-top:8px;font-size:11px;color:var(--tx2)">Use ← → buttons or click <b>Fullscreen</b> for presentation mode. ${slides.length} slides prepared.</p>`;
+  h+=suggest(I,data);
+  h+=`<span class="st">Presentation Mode · ${slides.length} slides · ${fN(all.length)} claims</span>`;
+  return h;
+}
+
 function proc(q){
   const I=parse(q);
+  const _data=flt(gDS(),I.filters);
+  function _wrap(html){
+    // Auto-append smart suggestions and narrative to all responses
+    const skipSuggest=/whatif|sankey|dealerscore|presentation|export|vizstudio|dashbuilder|snapshots/.test(I.type);
+    const addNarrative=/ranking|analysis|summary|comparison|pareto|donut/.test(I.type)&&_data.length>=10;
+    let out=html;
+    if(addNarrative&&!out.includes('Executive Summary'))out+=narrate(_data);
+    if(!skipSuggest&&!out.includes('Next:'))out+=suggest(I,_data);
+    return out;
+  }
   switch(I.type){
-    case'insights':return genInsights(I);
-    case'alert':return genAlerts(I);
-    case'forecast':return genForecast(I);
     case'repeatvin':return genRepeatVIN(I);
     case'costbreakdown':return genCostBreakdown(I);
     case'mileagehist':return genMileageDist(I);
@@ -2446,21 +2844,28 @@ function proc(q){
     case'mexicomap':return genMexicoMap(I);
     case'canadamap':return genCanadaMap(I);
     case'australiamap':return genAustraliaMap(I);
-    case'ranking':return genRanking(I);
-    case'analysis':return genAnalysis(I);
-    case'trend':return genTrend(I);
-    case'summary':return genSummary(I);
-    case'comparison':return genComparison(I);
-    case'anomaly':return genEnhancedAnomaly(I);
-    case'climate':return genClimate(I);
-    case'map':return genMap(I);
-    case'heatmap':return genHeatmap(I);
-    case'pareto':I.viz='pareto';return genRanking(I);
-    case'donut':I.viz='donut';return genRanking(I);
-    case'scatter':return mkScatter(flt(gDS(),I.filters).slice(0,300),'Mileage vs Cost');
-    case'stratification':return(I.filters.partNM||I.filters.system||I.filters._hvac)?genAnalysis(I):genSummary(I);
-    case'detail':return genDetail(I);
-    default:return genRanking(I);
+    case'whatif':return genWhatIf(I);
+    case'sankey':return genSankey(I);
+    case'dealerscore':return genDealerScore(I);
+    case'presentation':return genPresentation(I);
+    case'ranking':return _wrap(genRanking(I));
+    case'analysis':return _wrap(genAnalysis(I));
+    case'trend':return _wrap(genTrend(I));
+    case'summary':return _wrap(genSummary(I));
+    case'comparison':return _wrap(genComparison(I));
+    case'anomaly':return _wrap(genEnhancedAnomaly(I));
+    case'climate':return _wrap(genClimate(I));
+    case'map':return _wrap(genMap(I));
+    case'heatmap':return _wrap(genHeatmap(I));
+    case'pareto':I.viz='pareto';return _wrap(genRanking(I));
+    case'donut':I.viz='donut';return _wrap(genRanking(I));
+    case'scatter':return _wrap(mkScatter(flt(gDS(),I.filters).slice(0,300),'Mileage vs Cost'));
+    case'stratification':return _wrap((I.filters.partNM||I.filters.system||I.filters._hvac)?genAnalysis(I):genSummary(I));
+    case'detail':return _wrap(genDetail(I));
+    case'insights':return _wrap(genInsights(I));
+    case'alert':return _wrap(genAlerts(I));
+    case'forecast':return _wrap(genForecast(I));
+    default:return _wrap(genRanking(I));
   }
 }
 
