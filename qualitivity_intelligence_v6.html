@@ -2829,7 +2829,7 @@ function genWhatIf(I){
   });
   h+=`</div>`;
   h+=narrate(data,`across ${fN(topCost.length)} top cost drivers`);
-  h+=`<script>function _wifCalc(id){let tot=0;document.querySelectorAll('.'+id+'_sl').forEach((sl,i)=>{const pct=parseInt(sl.value);const save=parseFloat(sl.dataset.cost)*pct/100;tot+=save;const pcts=document.querySelectorAll('.'+id+'_pct');const svs=document.querySelectorAll('.'+id+'_sv');if(pcts[i])pcts[i].textContent=pct+'%';if(svs[i])svs[i].textContent='$'+Math.round(save).toLocaleString();});document.getElementById(id+'_sav').textContent='$'+Math.round(tot).toLocaleString();document.getElementById(id+'_new').textContent='$'+Math.round(${totalCost*4}-tot).toLocaleString();}</script>`;
+  h+=`<script>function _wifCalc(id){let tot=0;document.querySelectorAll('.'+id+'_sl').forEach((sl,i)=>{const pct=parseInt(sl.value);const save=parseFloat(sl.dataset.cost)*pct/100;tot+=save;const pcts=document.querySelectorAll('.'+id+'_pct');const svs=document.querySelectorAll('.'+id+'_sv');if(pcts[i])pcts[i].textContent=pct+'%';if(svs[i])svs[i].textContent='$'+Math.round(save).toLocaleString();});document.getElementById(id+'_sav').textContent='$'+Math.round(tot).toLocaleString();document.getElementById(id+'_new').textContent='$'+Math.round(${totalCost*4}-tot).toLocaleString();}<\/script>`;
   h+=suggest(I,data);
   h+=`<span class="st">What-If Simulator · ${fN(data.length)} claims · ${fN(topCost.length)} cost drivers</span>`;
   return h;
@@ -3054,7 +3054,7 @@ function genPresentation(I){
   h+=`</div>`;
   h+=`<div style="position:absolute;bottom:0;left:0;height:3px;background:var(--ac);border-radius:2px;transition:width .3s" id="${uid}_bar" style="width:${100/slides.length}%"></div>`;
   h+=`</div>`;
-  h+=`<script>window._presIdx=window._presIdx||{};window._presIdx['${uid}']=0;function _presNav(id,dir){const slides=document.querySelectorAll('.'+id+'_slide');const n=slides.length;let cur=window._presIdx[id]||0;slides[cur].style.display='none';cur=(cur+dir+n)%n;slides[cur].style.display='block';slides[cur].style.animation='none';slides[cur].offsetHeight;slides[cur].style.animation='fadeUp .5s ease both';window._presIdx[id]=cur;document.getElementById(id+'_pg').textContent=(cur+1)+' / '+n;const bar=document.getElementById(id+'_bar');if(bar)bar.style.width=((cur+1)/n*100)+'%';}</script>`;
+  h+=`<script>window._presIdx=window._presIdx||{};window._presIdx['${uid}']=0;function _presNav(id,dir){const slides=document.querySelectorAll('.'+id+'_slide');const n=slides.length;let cur=window._presIdx[id]||0;slides[cur].style.display='none';cur=(cur+dir+n)%n;slides[cur].style.display='block';slides[cur].style.animation='none';slides[cur].offsetHeight;slides[cur].style.animation='fadeUp .5s ease both';window._presIdx[id]=cur;document.getElementById(id+'_pg').textContent=(cur+1)+' / '+n;const bar=document.getElementById(id+'_bar');if(bar)bar.style.width=((cur+1)/n*100)+'%';}<\/script>`;
   h+=`<p style="margin-top:8px;font-size:11px;color:var(--tx2)">Use ← → buttons or click <b>Fullscreen</b> for presentation mode. ${slides.length} slides prepared.</p>`;
   h+=suggest(I,data);
   h+=`<span class="st">Presentation Mode · ${slides.length} slides · ${fN(all.length)} claims</span>`;
