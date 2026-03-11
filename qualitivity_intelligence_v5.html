@@ -185,6 +185,76 @@ const SYS_CAT={
   'safety':{label:'Safety / Seguridad / 안전',kw:/safety|seguridad|안전|airbag|bolsa.*aire|에어백|srs|restraint|abs|collision|colision|충돌|sensor.*crash/,systems:[],parts:/AIR.*BAG|SRS|RESTRAINT/},
 };
 
+// ===== CUSTOMER FAILURE MODE (CFM) CLASSIFIER =====
+function getCFM(natName){
+  if(!natName)return 'Unknown';
+  const lo=natName.toLowerCase();
+  // Warning lights (check before inoperable since some overlap)
+  if(/warning light/.test(lo))return 'Warning Light';
+  // Inoperable sub-types
+  if(/inoperable.*not working/.test(lo))return 'Not Working';
+  if(/inoperable.*hard to/.test(lo))return 'Hard to Operate';
+  if(/inoperable.*working but|inoperable.*intermit/.test(lo))return 'Poor Performance';
+  if(/inoperable/.test(lo))return 'Not Working';
+  // Noise (all types)
+  if(/noise|abnormal sound/.test(lo))return 'Abnormal Noise';
+  // Leaks & fluid issues
+  if(/coolant.*leak|coolant.*water|coolant.*enter/.test(lo))return 'Coolant Leak';
+  if(/coolant/.test(lo))return 'Coolant Issue';
+  if(/oil.*leak|oil problem.*leak/.test(lo))return 'Oil Leak';
+  if(/eng\.\s*oil|t\/m oil/.test(lo))return 'Oil Issue';
+  if(/leaking.*water|leaking.*moisture|moisture/.test(lo))return 'Water Ingress';
+  if(/leaking.*oil/.test(lo))return 'Oil Leak';
+  if(/leaking.*air|air.*leak/.test(lo))return 'Air Leak';
+  if(/leaking/.test(lo))return 'Fluid Leak';
+  // Battery / charging / starting
+  if(/charging|battery/.test(lo))return 'Battery/Charging';
+  if(/hard to start|no crank|no start|cranks.*no|off delay/.test(lo))return 'No Start';
+  if(/engine hard|start.*delay/.test(lo))return 'Starting Problem';
+  // Appearance / cosmetic
+  if(/apperance|appearance|paint problem|parts paint|rust|corrosion/.test(lo))return 'Cosmetic Defect';
+  // Shift / transmission
+  if(/erratic shift|shift shock|shift delay|shift stuck|shift random|shift lever|cluch|clutch/.test(lo))return 'Shift/Trans Problem';
+  // Open/close
+  if(/open\/close|open.*close/.test(lo))return 'Open/Close Issue';
+  // Audio / Display / Infotainment
+  if(/audio|avn|display|screen|multimedia|bt inop|nav problem|telemetic/.test(lo))return 'Audio/Display';
+  // Vibration
+  if(/vibrat/.test(lo))return 'Vibration';
+  // Overheating
+  if(/over heat|overheat/.test(lo))return 'Overheating';
+  // A/C
+  if(/air condition|not enough cool/.test(lo))return 'A/C Problem';
+  // Assembly
+  if(/assembly/.test(lo))return 'Assembly Defect';
+  // Parts defect
+  if(/parts problem/.test(lo))return 'Parts Defect';
+  // Pulling / alignment
+  if(/pulling|drift|steering.*wheel/.test(lo))return 'Pulling/Alignment';
+  // Engine problems
+  if(/engine stall|eng.*surge|eng.*stumble|rpm.*unstable|rpm.*increas|lack of power/.test(lo))return 'Engine Problem';
+  // Seat belt
+  if(/seat belt|seat.*inop/.test(lo))return 'Seat/Belt Issue';
+  // Difficult to use / stuck
+  if(/difficult|stuck/.test(lo))return 'Hard to Operate';
+  // Driving performance
+  if(/driving perform/.test(lo))return 'Driving Problem';
+  // Odor
+  if(/odor|smell|fuel smell|exhaust gas/.test(lo))return 'Odor/Smell';
+  // Brake specific (not noise/vibration which are caught above)
+  if(/brake problem/.test(lo))return 'Brake Problem';
+  // Fuel / MPG
+  if(/fuel problem|mpg/.test(lo))return 'Fuel Problem';
+  // Receiving
+  if(/receiving/.test(lo))return 'Delivery Issue';
+  // Tire
+  if(/tire/.test(lo))return 'Tire Problem';
+  // Fallback: use main category before underscore
+  const main=natName.split('_')[0].trim();
+  if(main&&main.length<=25)return main;
+  return 'Other';
+}
+
 // ===== GLOBALS =====
 let D={'3M':[],'DC':[],'12M':[]};
 let aDS='all';
@@ -211,7 +281,8 @@ if(/by part|por parte|부품별/.test(lo))I.groupBy='partNM';
 else if(/by system|por sistema|시스템별/.test(lo))I.groupBy='system';
 else if(/by project|por proyecto|por modelo|by model|모델별/.test(lo))I.groupBy='proj';
 else if(/by nation|por pais|by country|국가별|시장별|by market/.test(lo))I.groupBy='nation';
-else if(/by nature|modo de falla|failure mode|불량유형/.test(lo))I.groupBy='natName';
+else if(/by nature|nature code|natname|naturaleza/.test(lo))I.groupBy='natName';
+else if(/cfm|customer fail|modo de falla|failure mode|불량유형|sintoma|symptom/.test(lo))I.groupBy='cfm';
 else if(/by supplier|por proveedor|공급업체별/.test(lo))I.groupBy='devName';
 else if(/by dealer|por dealer|딜러별/.test(lo))I.groupBy='dealer';
 else if(/by month|por mes|월별/.test(lo))I.groupBy='confMonth';
@@ -268,7 +339,7 @@ if(/\bmap\b|mapa\b|지도|geographic|geografic/.test(lo)){
 } else if(/supplier|proveedor|공급/.test(lo)){
   I.type='ranking';I.groupBy='devName';
 } else if(/common|comun|frecuente|repair|reparacion/.test(lo)){
-  I.type='ranking';if(!I.groupBy)I.groupBy='natName';
+  I.type='ranking';if(!I.groupBy)I.groupBy='cfm';
 } else if(/state|estado/.test(lo)&&/claim|garanti|reclam/.test(lo)){
   I.type='map';
 } else {
@@ -505,11 +576,10 @@ function mkMap(data, title, normalized){
       const ci=Math.min(Math.floor(intensity*10),10);
       const bg=val>0?HC[ci]:'#0a0f18';
       const fg=ci>4?'#fff':'var(--tx3)';
-      const ratio=normalized&&sales>0?(claims/sales*100).toFixed(2)+'%':'';
-      const tip=`${ST_NAMES[stHere]}\nClaims: ${claims}${sales?'\nSales: '+fN(sales):''}${normalized&&sales?'\nRatio: '+(claims/sales*100).toFixed(2)+'%':''}`;
+      const tip=`${ST_NAMES[stHere]}\nClaims: ${claims}${sales?'\nSales: '+fN(sales):''}${sales>0?'\nRatio: '+(claims/sales*1000).toFixed(1)+' per 1K':''}`;
       h+=`<div style="background:${bg};color:${fg};border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;transition:transform .15s;font-family:'JetBrains Mono',monospace;border:1px solid ${ci>2?'transparent':'var(--bd)'}" title="${tip}" onmouseenter="this.style.transform='scale(1.15)';this.style.zIndex='10'" onmouseleave="this.style.transform='scale(1)';this.style.zIndex='0'">
         <div style="font-size:10px;font-weight:700">${stHere}</div>
-        <div style="font-size:${normalized?'8':'9'}px;margin-top:1px">${normalized?(sales>0?(claims/sales*100).toFixed(1)+'%':'-'):claims||''}</div>
+        <div style="font-size:${normalized?'7':'9'}px;margin-top:1px">${normalized?(sales>0?(claims/sales*1000).toFixed(1):'-'):claims||''}</div>
       </div>`;
     } else {
       h+=`<div></div>`;
@@ -524,12 +594,12 @@ function mkMap(data, title, normalized){
   const stArr=Object.entries(stValues).filter(([st])=>!normalized||SALES_ST[st]>=10).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(stArr.length){
     h+=`<p style="font-size:11px;color:var(--tx2);margin:10px 0 6px"><b>Top States — ${metricLabel}:</b></p>`;
-    h+='<div class="tw"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio</th></tr></thead><tbody>';
+    h+='<div class="tw"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio (per 1K)</th></tr></thead><tbody>';
     stArr.forEach(([st,val],i)=>{
       const claims=stClaims[st]||0;const sales=SALES_ST[st]||0;
-      const ratio=sales>0?(claims/sales*100).toFixed(2)+'%':'—';
-      const flagColor=sales>0&&claims/sales>.05?'color:var(--rd)':claims/sales>.03?'color:var(--or)':'';
-      h+=`<tr><td>${i+1}</td><td>${ST_NAMES[st]||st}</td><td>${claims}</td><td>${fN(sales)}</td><td style="${flagColor};font-weight:600">${normalized?ratio:claims}</td></tr>`;
+      const ratio=sales>0?(claims/sales*1000).toFixed(1):'—';
+      const r1k=sales>0?claims/sales*1000:0;const flagColor=r1k>50?'color:var(--rd)':r1k>30?'color:var(--or)':'';
+      h+=`<tr><td>${i+1}</td><td>${ST_NAMES[st]||st}</td><td>${claims}</td><td>${fN(sales)}</td><td style="${flagColor};font-weight:600">${ratio}</td></tr>`;
     });
     h+='</tbody></table></div>';
   }
@@ -577,12 +647,12 @@ function mkRealMap(data, title, normalized, overlayVar, overlayLabel, monthIdx){
   // Table
   const stArr=Object.entries(stVals).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(stArr.length){
-    h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio</th>';
+    h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio (per 1K)</th>';
     if(overlayVar)h+=`<th>${esc(overlayLabel||overlayVar)}</th>`;
     h+='</tr></thead><tbody>';
     stArr.forEach(([st,val],i)=>{
       const cl=stClaims[st]||0;const sl=SALES_ST[st]||0;
-      const ratio=sl>0?(cl/sl*100).toFixed(2)+'%':'—';
+      const ratio=sl>0?(cl/sl*1000).toFixed(1):'—';
       let ovVal='';
       if(overlayVar){
         if(monthIdx!==undefined&&US_MONTHLY_TEMP&&US_MONTHLY_TEMP[st])
@@ -624,7 +694,7 @@ function mkRealMap(data, title, normalized, overlayVar, overlayLabel, monthIdx){
         d3.select(this).attr('stroke','#fff').attr('stroke-width',1.5);
         const st=FIPS[parseInt(d.id)];if(!st)return;
         const cl=stClaims[st]||0;const sl=SALES_ST[st]||0;
-        const ratio=sl>0?(cl/sl*100).toFixed(2)+'%':'—';
+        const ratio=sl>0?(cl/sl*1000).toFixed(1)+' per 1K':'—';
         let tipHtml=`<b>${ST_NAMES[st]}</b><br>Claims: ${cl}<br>Sales: ${fN(sl)}<br>Ratio: ${ratio}`;
         if(overlayVar&&monthIdx!==undefined&&US_MONTHLY_TEMP&&US_MONTHLY_TEMP[st]){
           tipHtml+=`<br>${overlayLabel}: ${overlayVar==='temp'?US_MONTHLY_TEMP[st][monthIdx]+'°F':US_MONTHLY_PRECIP[st]?US_MONTHLY_PRECIP[st][monthIdx]+' in':''}`;
@@ -752,7 +822,7 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title){
   const points=[];
   for(const[st,d]of Object.entries(stData)){
     if(d.sales<10)continue; // threshold
-    const ratio=d.claims/d.sales*100;
+    const ratio=d.claims/d.sales*1000;
     const cv=d.climate[climateVar];
     if(cv===undefined)continue;
     points.push({st,claims:d.claims,sales:d.sales,ratio,cv,name:ST_NAMES[st]});
@@ -785,7 +855,7 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title){
   h+=`<div style="position:absolute;bottom:0;left:50px;right:10px;height:1px;background:var(--bd)"></div>`;
   h+=`<div style="position:absolute;bottom:0;left:50px;width:1px;top:10px;background:var(--bd)"></div>`;
   h+=`<div style="position:absolute;bottom:-16px;left:50%;font-size:9px;color:var(--tx3)">${esc(climateLabel)}</div>`;
-  h+=`<div style="position:absolute;left:2px;top:50%;transform:rotate(-90deg);font-size:9px;color:var(--tx3)">Claim Ratio %</div>`;
+  h+=`<div style="position:absolute;left:2px;top:50%;transform:rotate(-90deg);font-size:9px;color:var(--tx3)">Claims per 1K</div>`;
   // Axis labels
   h+=`<div style="position:absolute;bottom:2px;left:50px;font-size:8px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${mnX.toFixed(0)}</div>`;
   h+=`<div style="position:absolute;bottom:2px;right:10px;font-size:8px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${mxX.toFixed(0)}</div>`;
@@ -794,8 +864,8 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title){
     const x=50+((p.cv-mnX)/xRange)*450;
     const y=H-((p.ratio/mxY)*(H-20));
     const size=Math.max(6,Math.min(14,Math.sqrt(p.claims)*2));
-    const col=p.ratio>5?'var(--rd)':p.ratio>2?'var(--or)':'var(--ac)';
-    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${col}" title="${p.name} (${p.st})\n${climateLabel}: ${p.cv}\nClaims: ${p.claims}\nSales: ${fN(p.sales)}\nRatio: ${p.ratio.toFixed(2)}%"></div>`;
+    const col=p.ratio>50?'var(--rd)':p.ratio>20?'var(--or)':'var(--ac)';
+    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${col}" title="${p.name} (${p.st})\n${climateLabel}: ${p.cv}\nClaims: ${p.claims}\nSales: ${fN(p.sales)}\nRatio: ${p.ratio.toFixed(1)} per 1K"></div>`;
     // State label for larger dots
     if(p.claims>20)h+=`<div style="position:absolute;left:${x+size/2+3}px;top:${y-4}px;font-size:8px;color:var(--tx3);pointer-events:none">${p.st}</div>`;
   });
@@ -851,10 +921,11 @@ function genAnalysis(I){
   const au=data.reduce((s,r)=>s+(r.useP||0),0)/data.length;
   let h=`<p><b>${esc(pn)} — Detailed Analysis</b> | ${dsl()}</p>`;
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--gn)'],['Avg Use Period',fN(au,1)+' mo','var(--pu)']]);
-  h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Failure Modes / Modos de Falla');
+  h+=mkBar(ag(data,'cfm','count').slice(0,15),'count','Customer Failure Modes / Modos de Falla');
+  h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Nature Detail / Detalle de Naturaleza');
   const byN=ag(data,'nation','count');if(byN.length>1)h+=mkDonut(byN,'Market / Mercado');
   const byP=ag(data,'proj','count');if(byP.length>1)h+=mkDonut(byP,'Project / Proyecto');
-  if(byP.length>1)h+=mkHeat(data,'natName','proj','Nature × Project');
+  if(byP.length>1)h+=mkHeat(data,'cfm','proj','Customer Failure Mode × Project');
   const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
   if(byM.length>1)h+=mkBar(byM,'count','Monthly Trend / Tendencia');
   // US Map if enough US data
@@ -907,7 +978,7 @@ function genSummary(I){
 function genComparison(I){
   const prjs=['CL4','NX4M','BL7M'];const all=gDS();
   let h=`<p><b>Project Comparison</b> — ${dsl()}</p>`;
-  const rows=prjs.map(p=>{const d=flt(all,{...I.filters,proj:p});const tc=d.reduce((s,r)=>s+(r.totalCost||0),0);const tp=ag(d,'partNM','count')[0];const tn=ag(d,'natName','count')[0];
+  const rows=prjs.map(p=>{const d=flt(all,{...I.filters,proj:p});const tc=d.reduce((s,r)=>s+(r.totalCost||0),0);const tp=ag(d,'partNM','count')[0];const tn=ag(d,'cfm','count')[0];
   return{proj:p,claims:d.length,cost:tc,avgC:d.length?tc/d.length:0,avgM:d.length?d.reduce((s,r)=>s+(r.mileage||0),0)/d.length:0,topPart:tp?tp.key+' ('+tp.count+')':'—',topNat:tn?tn.key+' ('+tn.count+')':'—'};});
   h+=mkTbl(rows,[{l:'Project',k:'proj',f:v=>`<b style="color:var(--ac)">${v}</b>`},{l:'Claims',k:'claims',f:v=>fN(v)},{l:'Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'},{l:'Top Part',k:'topPart',f:v=>esc(tr(v,30))},{l:'Top Failure',k:'topNat',f:v=>esc(tr(v,30))}]);
   h+=mkHeat(flt(all,I.filters),'system','proj','System × Project');
@@ -962,7 +1033,7 @@ function genHeatmap(I){
   const data=flt(gDS(),I.filters);if(!data.length)return'<p>No data.</p>';
   let h=`<p><b>Heatmap Analysis</b> — ${dsl()}</p>`;
   h+=mkHeat(data,'system','proj','System × Project');
-  h+=mkHeat(data,'natName','proj','Nature × Project');
+  h+=mkHeat(data,'cfm','proj','Customer Failure Mode × Project');
   h+=mkHeat(data,'system','nation','System × Market');
   const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
   if(usData.length>=5)h+=mkMap(usData,'US Geographic Heatmap (Normalized)',true);
@@ -1036,6 +1107,7 @@ const CHIPS=[
 {l:'🌲 Treemap',q:'Treemap claims by part'},
 {l:'🔍 Scatter',q:'Scatter mileage vs cost'},
 {l:'💰 By Cost',q:'Top 10 parts by cost'},
+{l:'🔎 CFM',q:'Top 15 customer failure modes'},
 ];
 
 function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
@@ -1125,11 +1197,11 @@ function copyUrl(){
 
 window.addEventListener('load',()=>{
   if(typeof QUALITIVITY_DATA!=='undefined'){
-    D['3M']=QUALITIVITY_DATA['3M']||[];
-    D['DC']=QUALITIVITY_DATA['DC']||[];
+    D['3M']=(QUALITIVITY_DATA['3M']||[]).map(r=>{r.cfm=getCFM(r.natName);return r;});
+    D['DC']=(QUALITIVITY_DATA['DC']||[]).map(r=>{r.cfm=getCFM(r.natName);return r;});
     if(typeof QUALITIVITY_12M_COLS!=='undefined'){
       const cols=QUALITIVITY_12M_COLS;
-      D['12M']=QUALITIVITY_12M_ROWS.map(row=>{const o={};cols.forEach((c,i)=>{o[c]=row[i]});return o;});
+      D['12M']=QUALITIVITY_12M_ROWS.map(row=>{const o={};cols.forEach((c,i)=>{o[c]=row[i]});o.cfm=getCFM(o.natName);return o;});
     }
     if(typeof US_SALES_BY_STATE!=='undefined')SALES_ST=US_SALES_BY_STATE;
     init();
