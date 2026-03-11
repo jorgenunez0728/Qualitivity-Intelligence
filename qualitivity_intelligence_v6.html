@@ -17,7 +17,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .pills{display:flex;gap:8px}
 .pill{font:11px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:6px;background:var(--sf2);border:1px solid var(--bd);color:var(--tx2)}
 .pill b{color:var(--ac)}
-.kstrip{display:flex;gap:1px;background:var(--bd);flex-shrink:0}
+.kstrip{display:none;gap:1px;background:var(--bd);flex-shrink:0}
 .kp{flex:1;background:var(--sf);padding:8px 14px;text-align:center;min-width:0}
 .kp .kl{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em}
 .kp .kv{font:700 18px 'JetBrains Mono',monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -74,14 +74,15 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .sb{width:42px;height:42px;background:linear-gradient(135deg,var(--ac),var(--pu));border:none;border-radius:10px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .12s,box-shadow .2s}
 .sb:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(56,189,248,.25)}
 .sb svg{width:18px;height:18px}
-.cps{display:flex;flex-wrap:wrap;gap:5px;padding:0 20px 6px;flex-shrink:0}
-.cp{background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:4px 12px;border-radius:16px;font:11px 'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.cps{display:flex;flex-wrap:wrap;gap:8px;padding:8px 20px 10px;flex-shrink:0;justify-content:center}
+.cp{background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);padding:8px 16px;border-radius:20px;font:12px 'DM Sans',sans-serif;cursor:pointer;transition:all .15s;max-width:100%}
 .cp:hover{border-color:var(--ac);color:var(--ac);background:var(--acd)}
 .lo{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:14px}
 .lr{width:44px;height:44px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .lo p{color:var(--tx2);font-size:13px}
-@media(max-width:768px){.pills{display:none}.kstrip{flex-wrap:wrap}.kp{min-width:33%}.m{max-width:98%}.bl{width:110px;font-size:9px}}
+@media(max-width:768px){.pills{display:none}.kstrip{display:none}.m{max-width:98%}.bl{width:110px;font-size:9px}.dst{display:none}.ir textarea{font-size:16px}}
+@media(max-width:480px){.cps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}.cp{white-space:nowrap;flex-shrink:0}}
 /* v6: Insight rows */
 .ins-row{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-left:3px solid var(--bd);border-radius:0 8px 8px 0;margin:4px 0;background:var(--sf2);animation:mi .3s ease both}
 .ins-row.sev-red{border-left-color:var(--rd)}.ins-row.sev-or{border-left-color:var(--or)}.ins-row.sev-yl{border-left-color:var(--yl)}.ins-row.sev-gn{border-left-color:var(--gn)}
@@ -2477,51 +2478,9 @@ document.getElementById('dst').addEventListener('click',e=>{if(e.target.classLis
 
 // ===== CHIPS =====
 const CHIPS=[
-{l:'🧠 Insights',q:'Intelligence briefing'},
-{l:'🚨 Alerts',q:'Early warning spike detection'},
-{l:'🔮 Forecast',q:'Warranty cost forecast projection'},
-{l:'🔁 Repeat VINs',q:'Repeat VIN vehicle detection'},
-{l:'💧 Cost Split',q:'Warranty cost breakdown by system'},
-{l:'📊 Mileage Dist',q:'Mileage distribution histogram'},
-{l:'🏭 Risk Score',q:'Supplier risk scorecard'},
-{l:'📐 Period Compare',q:'3M vs 12M period comparison'},
-{l:'🎨 Viz Studio',q:'Visualization studio combine'},
-{l:'📊 Dashboard',q:'Summary dashboard overview'},
-{l:'🌍 World Map',q:'World map global all markets'},
-{l:'🗺️ USA Map',q:'Map of USA claims normalized by sales'},
-{l:'🇲🇽 México Map',q:'Mexico map mapa México'},
-{l:'🌎 LATAM Map',q:'Latin America map'},
-{l:'🕌 Middle East',q:'Middle East map'},
-{l:'🍁 Canada Map',q:'Canada map'},
-{l:'🦘 Australia',q:'Australia map'},
-{l:'📊 Dash Builder',q:'Build custom dashboard'},
-{l:'📸 Snapshots',q:'Data version snapshots'},
-{l:'📊 Excel Export',q:'Export Excel download'},
-{l:'🌡️ Climate',q:'Climate correlation analysis'},
-{l:'🌡️🇲🇽 Clima MX',q:'Climate correlation analysis Mexico'},
-{l:'🌡️🍁 Clima CA',q:'Climate correlation analysis Canada'},
-{l:'🔋 Battery CL4',q:'Battery analysis CL4'},
-{l:'❄️ HVAC/AC',q:'HVAC air conditioning analysis'},
-{l:'⚡ Electrical',q:'Electrical system analysis'},
-{l:'🔧 Powertrain',q:'Powertrain engine transmission analysis'},
-{l:'🛞 Braking',q:'Braking system analysis'},
-{l:'🎯 Steering',q:'Steering suspension alignment analysis'},
-{l:'🎵 Infotainment',q:'Infotainment display audio analysis'},
-{l:'🚪 Body/Trim',q:'Body trim doors handles analysis'},
-{l:'🔥 Heatmap',q:'Heatmap analysis'},
-{l:'📈 Trend',q:'Monthly trend'},
-{l:'⚖️ Compare',q:'Compare projects'},
-{l:'🚨 Anomalies',q:'Flag dealer anomalies'},
-{l:'📉 Pareto',q:'Pareto top 15 parts'},
-{l:'🏭 Suppliers',q:'Top 10 by supplier'},
-{l:'🍩 Systems',q:'Donut by system'},
-{l:'🇺🇸 Top USA',q:'Top 10 parts USA'},
-{l:'🇲🇽 México',q:'Top 10 parts Mexico'},
-{l:'🌲 Treemap',q:'Treemap claims by part'},
-{l:'🔍 Scatter',q:'Scatter mileage vs cost'},
-{l:'💰 By Cost',q:'Top 10 parts by cost'},
-{l:'🖨️ Report',q:'Executive report'},
-{l:'📥 Export CSV',q:'Export CSV download'},
+{l:'Show me HVAC claims in USA during July with avg temperature',q:'HVAC analysis USA July map temperature'},
+{l:'Full intelligence briefing with cost forecast',q:'Intelligence briefing'},
+{l:'Climate correlation: temperature vs claims in México by state',q:'Climate correlation analysis Mexico'},
 ];
 
 function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
@@ -2529,41 +2488,11 @@ function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{con
 // ===== INIT =====
 function init(){
   const all=[...D['3M'],...D['DC'],...D['12M']];
-  const tc=all.reduce((s,r)=>s+(r.totalCost||0),0);
-  const tp=ag(D['3M'],'partNM','count')[0];
   document.getElementById('pC').innerHTML=`Claims: <b>${fN(all.length)}</b>`;
-  document.getElementById('ks').innerHTML=`
-    <div class="kp"><div class="kl">3M</div><div class="kv" style="color:var(--ac)">${fN(D['3M'].length)}</div><div class="ks">${D['3M'].filter(r=>r.proj==='CL4').length} CL4 · ${D['3M'].filter(r=>r.proj==='NX4M').length} NX4M · ${D['3M'].filter(r=>r.proj==='BL7M').length} BL7M</div></div>
-    <div class="kp"><div class="kl">DC</div><div class="kv" style="color:var(--gn)">${fN(D['DC'].length)}</div><div class="ks">Dealer Claims</div></div>
-    <div class="kp"><div class="kl">12M</div><div class="kv" style="color:var(--or)">${fN(D['12M'].length)}</div><div class="ks">12-Month</div></div>
-    <div class="kp"><div class="kl">Total Cost</div><div class="kv" style="color:var(--rd)">${f$(tc)}</div><div class="ks">All datasets</div></div>
-    <div class="kp"><div class="kl">Top 3M</div><div class="kv" style="color:var(--yl);font-size:12px">${tp?tp.key:'—'}</div><div class="ks">${tp?tp.count+' claims':'—'}</div></div>`;
   mkChips();
-  addM(`<p><b>Qualitivity Intelligence v7</b> — Advanced Analytics + Data Platform</p>
-<p>${fN(all.length)} warranty claims loaded: <b>3M</b> ${fN(D['3M'].length)} · <b>DC</b> ${fN(D['DC'].length)} · <b>12M</b> ${fN(D['12M'].length)}</p>
-${mkKPIs([['3M',fN(D['3M'].length),'var(--ac)'],['DC',fN(D['DC'].length),'var(--gn)'],['12M',fN(D['12M'].length),'var(--or)'],['Total Cost',f$(tc),'var(--rd)']])}
-<p style="margin-top:10px"><b>🆕 v7 New Features:</b></p>
-<p style="font-size:12px;color:var(--tx2);line-height:1.8">
-📥 <b>Data Import</b> — Upload CSV/TSV, auto-merge with existing data, dedup by VIN<br>
-🚨 <b>Import Alerts</b> — Auto-detect anomalies: new parts, cost spikes, volume surges<br>
-📸 <b>Data Versioning</b> — IndexedDB snapshots, compare data across imports<br>
-🍁 <b>Canada & 🦘 Australia Maps</b> — Province/state tiles when data available<br>
-🌐 <b>Auto-Market Detection</b> — "Top 10 Colombia" auto-shows LATAM map<br>
-🎨 <b>Viz Studio Presets</b> — One-click chart combos: Overview, Geographic, Executive<br>
-📊 <b>Dashboard Builder</b> — Multi-panel 2-column layout, add/remove panels<br>
-⭐ <b>Saved Queries</b> — Bookmark favorite queries for one-click access<br>
-📜 <b>Query History</b> — Searchable history of all past queries<br>
-🌐 <b>Language Toggle</b> — Switch UI between EN/ES/KO<br>
-📊 <b>Excel Export</b> — Export any dataset to .xls (Excel XML)
-</p>
-<p style="margin-top:4px;font-size:12px;color:var(--tx2);line-height:1.8">
-<b>v6 Features (still available):</b> 🧠 Intelligence Briefing · 🌍 Multi-Region Maps · 🔮 Forecast · 🔁 Repeat VINs · 💧 Cost Split · 📊 Mileage Distribution · 🏭 Supplier Risk · 📐 Period Compare · 🖨️ Executive Report
-</p>
-<p style="margin-top:6px;color:var(--tx3);font-size:11px">
-🇬🇧 "Canada map" · "Build dashboard" · "Export Excel" · "Data snapshots" · "Top 10 Colombia"<br>
-🇪🇸 "Mapa Canadá" · "Constructor dashboard" · "Exportar Excel" · "Versiones datos"<br>
-🇰🇷 "캐나다 지도" · "호주 지도" · "대시보드" · "엑셀 내보내기"
-</p>
+  addM(`<p><b>Qualitivity Intelligence v7</b></p>
+<p>${fN(all.length)} warranty claims loaded — <b>3M</b> ${fN(D['3M'].length)} · <b>DC</b> ${fN(D['DC'].length)} · <b>12M</b> ${fN(D['12M'].length)}</p>
+<p style="margin-top:8px;font-size:12px;color:var(--tx2)">Type a question or tap a suggestion below.</p>
 <span class="st">KMX Qualitivity Intelligence · v7 · Mar 2026</span>`,false);
   document.getElementById('lo').style.display='none';inp.focus();
 }
