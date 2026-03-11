@@ -518,6 +518,26 @@ const SYS_CAT={
   'safety':{label:'Safety / Seguridad / 안전',kw:/safety|seguridad|안전|airbag|bolsa.*aire|에어백|srs|restraint|abs|collision|colision|충돌|sensor.*crash/,systems:[],parts:/AIR.*BAG|SRS|RESTRAINT/},
 };
 
+// ===== CUSTOMER FAILURE MODE TAXONOMY =====
+const FAILURE_MODES=[
+  {id:'inoperable',label:'Inoperable / No Function',labelES:'Inoperable / Sin Función',
+   rx:/\b(inoper|not\s*work|no\s*(funciona|enciende|arranca|prende|sirve|responde|detecta|abre|cierra|programa|comunica|sincroniza)|won.?t\s*(start|work|open|close|program|detect)|does\s*n.?t\s*(work|start|function|respond|detect|open|close|program)|can.?t\s*(start|program|be\s*program|detect|open|close)|will\s*not\s*(work|start|program|detect|open|close)|dead|failed|unresponsive|disabled|no\s*power|sin\s*(corriente|energ|funci[oó]n)|ne\s*(fonctionne|d[ée]marre|s.?ouvre|r[ée]pond)\s*pas|ceased|n.?a\s*pas\s*(d[ée]marr|fonctionn)|v[ée]hicule\s*ne\s*(part|d[ée]marr))\b/i},
+  {id:'intermittent',label:'Intermittent / Erratic',labelES:'Intermitente / Errático',
+   rx:/\b(intermit|erratic|sporadic|random|sometimes|a\s*veces|de\s*(vez\s*en\s*cuando|repente)|occasional|comes\s*and\s*goes|va\s*y\s*viene|par\s*moments?|parfois|at\s*times)\b/i},
+  {id:'noise',label:'Noise / Vibration',labelES:'Ruido / Vibración',
+   rx:/\b(noise|ruido|vibra[tc]|squeal|rattle|knock|golpe|crujido|grinding|squeak|rechinido|clunk|bang|hum|buzz|whine|click|bruit|cognement|grince|traquete|abnormal\s*sound|sonido)\b/i},
+  {id:'physical',label:'Physical Damage / Defect',labelES:'Daño Físico / Defecto',
+   rx:/\b(broken|roto|crack|damaged|da[ñn]o|desgast|loose|suelto|floj|bent|dent|scratch|raya|torn|ripped|missing|faltante|detach|desprend|peeling|warp|deform|corrosi|corros|rust|oxid|bris[ée]|cass[ée]|endommag)\b/i},
+  {id:'performance',label:'Performance Degradation',labelES:'Degradación de Rendimiento',
+   rx:/\b(slow|lento|weak|d[ée]bil|poor|hard\s*to|difficult|dif[ií]cil|soft\s*(pedal|brake)|pulls?\s*(left|right|to)|delayed|lag|sluggish|reduced|low\s*(pressure|power)|rough|harsh|stiff|pesad|drag|jalonea|se\s*ahoga|faible|dur\s*[àa])\b/i},
+  {id:'warning',label:'Warning / Alert / DTC',labelES:'Alerta / Testigo / DTC',
+   rx:/\b(warning|light\s*on|testigo|check\s*engine|alert|alerta|message|mensaje|indicator|dash(board)?\s*(light|message|warning)|DTC|MIL|luz\s*(encendid|prendid)|voyant|t[ée]moin|engine\s*light)\b/i},
+  {id:'leak',label:'Leak / Fluid / Contamination',labelES:'Fuga / Fluido / Contaminación',
+   rx:/\b(leak|fuga|fluid|fluido|oil\b|aceite|wet\b|moisture|humid|water|agua|coolant|refrigerante|seep|drip|gotea|stain|mancha|fuite|huile)\b/i}
+];
+const FM_LOOKUP=Object.fromEntries(FAILURE_MODES.map(f=>[f.id,f]));
+function fmLabel(id){const f=FM_LOOKUP[id];return f?f.label:id==='other'?'Other / Otro':id;}
+
 // ===== GLOBALS =====
 let D={'3M':[],'DC':[],'12M':[]};
 let aDS='all';
@@ -639,6 +659,7 @@ const INTENT_DEFS=[
   {type:'detail',kw:[{p:/detail|detalle|list|lista|목록/,w:7}],min:5},
   {type:'donut',kw:[{p:/donut|pie|pastel|원형|dona/,w:10}],min:8},
   {type:'stratification',kw:[{p:/stratif|estratif/,w:10},{p:/breakdown|분석/,w:5}],min:8},
+  {type:'failuremode',kw:[{p:/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|고장\s*모드/,w:12},{p:/customer\s*(complaint|failure)|queja.*cliente/,w:10},{p:/failure\s*mode\s*analy/,w:14}],min:9},
   {type:'analysis',kw:[{p:/analysis|analisis|분석/,w:6}],min:5},
 ];
 
@@ -742,11 +763,12 @@ function mkParseBar(I,dataLen){
   if(I.groupBy)tags.push(`<span class="pt" data-tip="Grouped by ${I.groupBy} field">by ${I.groupBy}</span>`);
   if(I.metric!=='count')tags.push(`<span class="pt" data-tip="Sorting/measuring by ${I.metric}">${I.metric}</span>`);
   for(const[k,v]of Object.entries(I.filters||{})){
-    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months'&&k!=='_natSearch')continue;
+    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months'&&k!=='_natSearch'&&k!=='_failureMode')continue;
     if(k==='_sysCategory')tags.push(`<span class="pt pf" data-tip="Smart category filter: ${v}">${v}</span>`);
     else if(k==='_hvac')tags.push(`<span class="pt pf" data-tip="Heating, ventilation & air conditioning filter">HVAC</span>`);
     else if(k==='_months')tags.push(`<span class="pt pf" data-tip="Temporal filter: specific months">${Array.isArray(v)?v.length+' months':v}</span>`);
     else if(k==='_natSearch')tags.push(`<span class="pt pf" data-tip="Searching failure modes/comments for: ${v.join(', ')}">symptom: ${v.join(' | ')}</span>`);
+    else if(k==='_failureMode')tags.push(`<span class="pt pf" data-tip="Customer failure mode category: ${fmLabel(v)}" style="background:var(--ac);color:var(--bg)">⚡ ${fmLabel(v)}</span>`);
     else if(k.startsWith('!')){tags.push(`<span class="pt" style="color:var(--rd)" data-tip="Excluding this value">NOT ${k.slice(1)}=${Array.isArray(v)?v.join(','):v}</span>`);}
     else tags.push(`<span class="pt pf" data-tip="Filter: ${k}">${k}=${Array.isArray(v)?v.join(' | '):v}</span>`);
   }
@@ -887,6 +909,13 @@ if(I.filters.partNM&&I.filters._sysCategory)delete I.filters._sysCategory;
 // When searching by symptom, default to groupBy natName and route to analysis for detailed view
 if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
 if(I.filters._natSearch&&(I.filters.partNM||I.filters._sysCategory||I.filters._hvac))I.type='analysis';
+// Failure mode category filter — detect failure mode keywords and set _failureMode filter
+const _FM_PARSE={inoperable:/\binoper|no\s*(funciona|enciende|arranca)|not\s*work|won.?t\s*start|dead\b|sin\s*funci/i,intermittent:/\bintermit|err[aá]tic|sporadic/i,noise:/\b(noise|ruido|vibra(tion|ci[oó]n))/i,physical:/\b(physical|damage|da[ñn]o|broken|roto|crack|defect)/i,performance:/\b(performance|degradat|rendimiento|slow|weak|hard\s*to|soft\s*pedal)/i,warning:/\b(warning|alert|alerta|testigo|light\s*on|check\s*engine|dtc)\b/i,leak:/\b(leak|fuga|fluid|oil\b|aceite|moisture)/i};
+if(!I.filters._natSearch){for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(lo)){I.filters._failureMode=fmId;break;}}}
+// Failure mode analysis intent detection
+if(/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|customer\s*(complaint|failure)|queja.*cliente|고장\s*모드|failure\s*mode\s*analysis/i.test(lo))I.type='failuremode';
+// When failure mode filter active with part/system, route to analysis
+if(I.filters._failureMode&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -939,6 +968,9 @@ function flt(data,filters){
         const matched=v.some(term=>nat.includes(term)||com.includes(term));
         if(!matched)return false;
       }
+      else if(k==='_failureMode'){
+        if(r._failureMode!==v)return false;
+      }
       else if(k==='partNM'){if(!r.partNM||!r.partNM.toUpperCase().includes(v.toUpperCase()))return false;}
       else if(k.startsWith('!')){
         // Level 5A: negation filter
@@ -968,10 +1000,13 @@ function ag(data,gBy,metric){
   }
   for(const k in g){g[k].avgM=g[k].n>0?g[k].mileage/g[k].n:0;g[k].avgC=g[k].n>0?g[k].cost/g[k].n:0;}
   const vk=metric==='cost'?'cost':metric==='mileage'?'avgM':'count';
-  return Object.entries(g).map(([key,v])=>({key,value:v[vk],...v})).sort((a,b)=>b.value-a.value);
+  const res=Object.entries(g).map(([key,v])=>({key,value:v[vk],...v})).sort((a,b)=>b.value-a.value);
+  // Remap _failureMode IDs to human-readable labels
+  if(gBy==='_failureMode')res.forEach(r=>{r.key=fmLabel(r.key);});
+  return res;
 }
 
-function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')||k==='_natSearch').map(([k,v])=>k==='_natSearch'?`symptom=${v.join('|')}`:`${k}=${v}`).join(', ');}
+function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')||k==='_natSearch'||k==='_failureMode').map(([k,v])=>k==='_natSearch'?`symptom=${v.join('|')}`:k==='_failureMode'?`mode=${fmLabel(v)}`:`${k}=${v}`).join(', ');}
 function dsl(){return aDS==='all'?'All':'Sheet '+aDS;}
 
 // ===== VIZ BUILDERS =====
@@ -998,6 +1033,7 @@ function mkTbl(items,cols){
 }
 
 function mkHeat(data,rF,cF,title){
+  const _fmMap=k=>(rF==='_failureMode'||cF==='_failureMode')?fmLabel(k):k;
   const rows=[...new Set(data.map(r=>r[rF]))].filter(Boolean).sort();
   const cols=[...new Set(data.map(r=>r[cF]))].filter(Boolean).sort();
   if(!rows.length||!cols.length)return'';
@@ -1005,9 +1041,9 @@ function mkHeat(data,rF,cF,title){
   for(const r of data){const rk=r[rF],ck=r[cF];if(!rk||!ck)continue;const k=rk+'||'+ck;grid[k]=(grid[k]||0)+(r.claims||1);if(grid[k]>mx)mx=grid[k];}
   let h=`<div class="cb"><div class="ct">${esc(title)}</div><div class="hmg" style="grid-template-columns:140px repeat(${cols.length},1fr)">`;
   h+='<div class="hmh"></div>';
-  cols.forEach(c=>h+=`<div class="hmh">${esc(tr(c,12))}</div>`);
+  cols.forEach(c=>h+=`<div class="hmh">${esc(tr(_fmMap(c),12))}</div>`);
   rows.forEach(row=>{
-    h+=`<div class="hmh" style="text-align:right;padding-right:6px">${esc(tr(row,20))}</div>`;
+    h+=`<div class="hmh" style="text-align:right;padding-right:6px">${esc(tr(_fmMap(row),20))}</div>`;
     cols.forEach(col=>{
       const v=grid[row+'||'+col]||0;
       const ci=mx>0?Math.min(Math.floor(v/mx*10),10):0;
@@ -1511,59 +1547,63 @@ function autoMarketMap(I, data){
   return'';
 }
 
-// ===== COMMENT-BASED FAILURE DESCRIPTION EXTRACTION =====
-function commentFailureSummary(data){
-  const withCom=data.filter(r=>r.comment&&r.comment.length>15);
-  if(withCom.length<2)return'';
-  // Extract key phrases from comments using pattern matching
-  const phrases={};
-  const _stripRx=/^\[?[CT]\]?\s*|^description\s*:?\s*|^code\s*de\s*travail\b.*?\/\s*/i;
-  const _splitRx=/[.;!]\s+|\n/;
-  for(const r of withCom){
-    const raw=(r.comment||'').replace(_stripRx,'').trim();
-    // Split into sentences and take most descriptive one
-    const sents=raw.split(_splitRx).map(s=>s.trim()).filter(s=>s.length>10&&s.length<200);
-    for(const s of sents){
-      // Normalize: lowercase, collapse whitespace, remove trailing punctuation
-      const norm=s.toLowerCase().replace(/\s+/g,' ').replace(/[."']+$/,'').trim();
-      if(norm.length<10)continue;
-      // Group similar phrases: check if this is substring/superstring of existing
-      let merged=false;
-      for(const pk in phrases){
-        if(pk.includes(norm)||norm.includes(pk)){
-          // Keep the shorter (more general) key
-          const keepKey=pk.length<=norm.length?pk:norm;
-          const dropKey=pk.length<=norm.length?norm:pk;
-          if(keepKey!==pk){phrases[keepKey]={count:phrases[pk].count+1,samples:phrases[pk].samples};delete phrases[pk];}
-          else{phrases[pk].count++;}
-          merged=true;break;
-        }
-        // Fuzzy: >60% word overlap
-        const w1=new Set(pk.split(/\s+/));const w2=new Set(norm.split(/\s+/));
-        const inter=[...w1].filter(w=>w2.has(w)&&w.length>3).length;
-        const minW=Math.min(w1.size,w2.size);
-        if(minW>=3&&inter/minW>=0.6){
-          phrases[pk].count++;
-          if(phrases[pk].samples.length<2)phrases[pk].samples.push(s);
-          merged=true;break;
-        }
-      }
-      if(!merged)phrases[norm]={count:1,samples:[s]};
-    }
+// ===== CUSTOMER COMMENT EXTRACTION & FAILURE MODE CATEGORIZATION =====
+function extractCC(comment){
+  if(!comment)return'';
+  const segs=comment.split(/\\n|\n/).filter(s=>/^\[C\]/i.test(s.trim()));
+  if(segs.length)return segs.map(s=>s.trim().replace(/^\[C\]\s*/i,'')).join(' ').trim();
+  // Fallback: [D] with "CUSTOMER STATES" or "CUST STATES" pattern — these describe customer complaints
+  const dSegs=comment.split(/\\n|\n/).filter(s=>/^\[D\].*cust(omer)?\s*state/i.test(s.trim()));
+  if(dSegs.length)return dSegs.map(s=>s.trim().replace(/^\[D\]\s*/i,'')).join(' ').trim();
+  // Fallback: [M]\n[S]CONDITION: pattern (some dealers use this format)
+  const sSegs=comment.split(/\\n|\n/).filter(s=>/^\[S\]\s*CONDITION:/i.test(s.trim()));
+  if(sSegs.length)return sSegs.map(s=>s.trim().replace(/^\[S\]\s*CONDITION:\s*/i,'')).join(' ').trim();
+  return'';
+}
+
+function categorizeFailure(text){
+  if(!text||text.length<8)return'other';
+  const lo=text.toLowerCase();
+  for(const fm of FAILURE_MODES){
+    if(fm.rx.test(lo))return fm.id;
   }
-  // Sort by frequency and show top entries
-  const top=Object.entries(phrases).sort((a,b)=>b[1].count-a[1].count).filter(([,v])=>v.count>=1).slice(0,8);
-  if(!top.length)return'';
-  const mx=top[0][1].count;const tot=withCom.length;
-  let h=`<div class="cb"><div class="ct">Failure Descriptions from Comments / Descripciones de Falla</div>`;
-  h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Parsed from ${fN(tot)} dealer comments</div>`;
-  top.forEach(([desc,v],i)=>{
+  return'other';
+}
+
+function failureModeSummary(data){
+  const withCC=data.filter(r=>r._custComment);
+  if(withCC.length<2)return'';
+  // Count by failure mode category
+  const counts={};
+  for(const r of withCC){
+    const fm=r._failureMode||'other';
+    if(!counts[fm])counts[fm]={count:0,samples:[]};
+    counts[fm].count++;
+    if(counts[fm].samples.length<3)counts[fm].samples.push(r._custComment);
+  }
+  const items=Object.entries(counts)
+    .sort((a,b)=>b[1].count-a[1].count)
+    .slice(0,7);
+  if(!items.length)return'';
+  const mx=items[0][1].count;const tot=withCC.length;
+  let h=`<div class="cb"><div class="ct">Customer Failure Modes / Modos de Falla del Cliente</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Categorized from ${fN(tot)} customer comments [C]</div>`;
+  items.forEach(([id,v],i)=>{
+    const label=fmLabel(id);
     const p=mx>0?(v.count/mx*100):0;
-    const pct=tot>0?(v.count/tot*100).toFixed(1)+'%':'';
-    const sample=v.samples[0]||desc;
-    h+=`<div class="br"><span class="bl" title="${esc(sample)}" style="max-width:200px">${i+1}. ${esc(tr(desc,45))}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[(i+3)%C.length]}"></div></div><span class="bv">${v.count}</span><span class="bp">${pct}</span></div>`;
+    const pct=(v.count/tot*100).toFixed(1)+'%';
+    const sampleTip=v.samples.map(s=>s.substring(0,120)).join('\n---\n');
+    h+=`<div class="br"><span class="bl" title="${esc(sampleTip)}" style="max-width:220px">${i+1}. ${esc(label)}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[i%C.length]}"></div></div><span class="bv">${v.count}</span><span class="bp">${pct}</span></div>`;
   });
-  h+='</div>';
+  // Clickable failure mode drill-down chips
+  h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">';
+  const partCtx=data.length>0?(data[0].partNM||''):'';
+  items.filter(([id])=>id!=='other').forEach(([id])=>{
+    const shortLabel=fmLabel(id).split('/')[0].trim();
+    const q=id+' '+(partCtx?partCtx+' ':'')+'analysis';
+    h+=`<button onclick="inp.value='${esc(q)}';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer">${shortLabel}</button>`;
+  });
+  h+='</div></div>';
   return h;
 }
 
@@ -1580,6 +1620,8 @@ function genRanking(I){
   else if(I.viz==='treemap')h+=mkTreemap(items,mL);
   else{h+=mkBar(items,I.metric,mL,data);if(items.length>=8)h+=mkPareto(items,'Pareto');}
   h+=mkTbl(items,[{l:I.groupBy,k:'key',f:v=>esc(tr(v,35))},{l:'Claims',k:'count',f:v=>fN(v)},{l:'Total Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'}]);
+  // Customer failure mode summary when filtered to specific parts
+  if(I.filters._failureMode||I.filters.partNM||I.filters._sysCategory)h+=failureModeSummary(data);
   // When symptom search is active, show matching dealer comments as evidence
   if(I.filters._natSearch){
     const terms=I.filters._natSearch;
@@ -1617,8 +1659,8 @@ function genAnalysis(I){
   let h=`<p><b>${esc(pn)} — Detailed Analysis</b> | ${dsl()}</p>`;
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--gn)'],['Avg Use Period',fN(au,1)+' mo','var(--pu)']]);
   h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Failure Modes / Modos de Falla');
-  // Failure descriptions extracted from dealer comments
-  h+=commentFailureSummary(data);
+  // Customer failure mode categorization from [C] comments
+  h+=failureModeSummary(data);
   // When symptom search is active, show matching comments with highlighted terms
   if(I.filters._natSearch){
     const terms=I.filters._natSearch;
@@ -1651,22 +1693,58 @@ function genAnalysis(I){
   if(data.length>5&&data[0].mileage!==undefined)h+=mkScatter(data,'Mileage vs Cost');
   const byD=ag(data,'devName','count').slice(0,5);
   if(byD.length)h+=`<p style="margin-top:8px"><b>Suppliers:</b> ${byD.map(d=>esc(tr(d.key,30))+' ('+d.count+')').join(' · ')}</p>`;
-  // Show diverse sample dealer comments — pick from different nations/natNames for variety
-  const wc=data.filter(r=>r.comment&&r.comment.length>20);
-  if(wc.length){
-    const seen=new Set();const diverse=[];
-    for(const r of wc){
-      const k=(r.nation||'')+'|'+(r.natName||'').slice(0,15);
-      if(!seen.has(k)){seen.add(k);diverse.push(r);}
-      if(diverse.length>=5)break;
-    }
-    // Fill remaining with unique comments if less than 5
-    if(diverse.length<5)for(const r of wc){if(!diverse.includes(r)){diverse.push(r);if(diverse.length>=5)break;}}
-    h+='<p style="margin-top:10px"><b>Dealer Comments:</b></p>';
-    diverse.forEach(r=>h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r.comment,150))}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`);
-  }
   h+=autoMarketMap(I,data);
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
+}
+
+function genFailureMode(I){
+  const data=flt(gDS(),I.filters);
+  if(!data.length)return'<p>No claims found. / Sin resultados.</p>';
+  const withCC=data.filter(r=>r._custComment);
+  const pn=I.filters.partNM||(I.filters._sysCategory?SYS_CAT[I.filters._sysCategory].label:I.filters._hvac?'HVAC/Climate':'All Parts');
+  const fmFilter=I.filters._failureMode?fmLabel(I.filters._failureMode):'';
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const am=data.length>0?data.reduce((s,r)=>s+(r.mileage||0),0)/data.length:0;
+  let h=`<p><b>Customer Failure Mode Analysis — ${esc(pn)}</b>${fmFilter?' | '+esc(fmFilter):''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['With [C] Comments',fN(withCC.length),'var(--gn)',pc(withCC.length,data.length)],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--pu)']]);
+  // Main failure mode summary bar chart
+  h+=failureModeSummary(data);
+  // Failure mode × Project heatmap
+  const projs=[...new Set(data.map(r=>r.proj))];
+  if(projs.length>1)h+=mkHeat(data,'_failureMode','proj','Customer Failure Mode × Project');
+  // Failure mode × Market
+  const nations=[...new Set(data.map(r=>r.nation))];
+  if(nations.length>1)h+=mkHeat(data,'_failureMode','nation','Customer Failure Mode × Market');
+  // Nature codes for cross-reference
+  h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Qualitivity Nature Codes');
+  // DTC / Cause Codes
+  const dtcData=data.filter(r=>r.causeCode&&r.causeCode!=='ZZ2'&&r.causeCode!=='ZZ7');
+  const byDTC=ag(dtcData.length>0?dtcData:data,'causeCode','count').filter(d=>d.key).slice(0,8);
+  if(byDTC.length>0)h+=mkBar(byDTC,'count','Cause / DTC Codes');
+  // Monthly trend
+  const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  if(byM.length>1)h+=mkBar(byM,'count','Monthly Trend / Tendencia');
+  // Market donuts
+  if(nations.length>1)h+=mkDonut(ag(data,'nation','count'),'Market / Mercado');
+  if(projs.length>1)h+=mkDonut(ag(data,'proj','count'),'Project / Proyecto');
+  // US Map
+  const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
+  if(usData.length>=5)h+=mkMap(usData,'US Geographic — '+esc(pn)+' Failure Modes',true);
+  // Scatter
+  if(data.length>5&&data[0].mileage!==undefined)h+=mkScatter(data,'Mileage vs Cost');
+  // Sample customer comments as evidence
+  if(withCC.length>0){
+    const samples=withCC.slice(0,6);
+    h+=`<div class="cb"><div class="ct">Sample Customer Comments [C] / Comentarios del Cliente</div>`;
+    samples.forEach(r=>{
+      const fmTag=fmLabel(r._failureMode);
+      h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+    });
+    h+='</div>';
+  }
+  h+=autoMarketMap(I,data);
+  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims · ${fN(withCC.length)} customer comments</span>`;
+  return h;
 }
 
 function mkTrendSVG(pts,title,isCost){
@@ -3022,9 +3100,15 @@ function suggest(I,data){
       suggestions.push({l:'Flag dealer anomalies',q:'Flag dealer anomalies'});
       break;
     case'analysis':
+      suggestions.push({l:'Customer failure modes',q:`failure mode analysis ${I.filters.partNM||''}`});
       suggestions.push({l:'Forecast this part',q:`Forecast ${I.filters.partNM||'trend'}`});
       suggestions.push({l:'Which dealers are affected?',q:`Anomalies ${I.filters.partNM||''}`});
       suggestions.push({l:'Climate correlation',q:`Climate correlation analysis`});
+      break;
+    case'failuremode':
+      if(I.filters.partNM)suggestions.push({l:'Map by failure mode',q:`map ${I.filters._failureMode||''} ${I.filters.partNM} USA`});
+      suggestions.push({l:'Climate correlation',q:`Climate correlation analysis ${I.filters.partNM||''}`});
+      if(topPart)suggestions.push({l:`Full analysis: ${tr(topPart,20)}`,q:`Analysis ${topPart}`});
       break;
     case'map':case'mexicomap':case'canadamap':case'worldmap':
       suggestions.push({l:'Climate correlation analysis',q:'Climate correlation analysis'});
@@ -3372,6 +3456,7 @@ function proc(q){
     case'presentation':return _pb+genPresentation(I);
     case'ranking':return _wrap(genRanking(I));
     case'analysis':return _wrap(genAnalysis(I));
+    case'failuremode':return _wrap(genFailureMode(I));
     case'trend':return _wrap(genTrend(I));
     case'summary':return _wrap(genSummary(I));
     case'comparison':return _wrap(genComparison(I));
@@ -3429,6 +3514,9 @@ const CHIPS=[
 {l:'Show me HVAC claims in USA during July with avg temperature',q:'HVAC analysis USA July map temperature'},
 {l:'Full intelligence briefing with cost forecast',q:'Intelligence briefing'},
 {l:'Climate correlation: temperature vs claims in México by state',q:'Climate correlation analysis Mexico'},
+{l:'Customer failure modes for FOB key',q:'failure mode analysis fob key'},
+{l:'Battery customer failure modes by region',q:'failure mode analysis battery'},
+{l:'Map inoperable battery claims USA with temperature',q:'map inoperable battery USA temperature'},
 ];
 
 function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
@@ -3522,6 +3610,9 @@ const AC_TEMPLATES=[
   {l:'Monthly trend',q:'monthly trend',c:'💡'},
   {l:'HVAC analysis USA July temperature',q:'HVAC analysis USA July map temperature',c:'💡'},
   {l:'Battery analysis CL4',q:'battery analysis CL4',c:'💡'},
+  {l:'Customer failure modes FOB key',q:'failure mode analysis fob key',c:'💡'},
+  {l:'Customer failure modes battery',q:'failure mode analysis battery',c:'💡'},
+  {l:'Map inoperable claims with temperature',q:'map inoperable battery USA temperature',c:'💡'},
   {l:'Map USA claims normalized',q:'map USA claims normalized by sales',c:'💡'},
   {l:'Compare projects',q:'compare projects',c:'💡'},
   {l:'Flag dealer anomalies',q:'flag dealer anomalies',c:'💡'},
@@ -3589,6 +3680,9 @@ const CMDS=[
   {cat:'📊 Analysis',l:'Battery deep dive',q:'battery analysis',k:''},
   {cat:'📊 Analysis',l:'Period comparison (3M vs 12M)',q:'period comparison improvement',k:''},
   {cat:'📊 Analysis',l:'Supplier risk scorecard',q:'supplier risk scorecard',k:''},
+  {cat:'📊 Analysis',l:'Customer failure modes',q:'failure mode analysis',k:''},
+  {cat:'📊 Analysis',l:'FOB key failure modes',q:'failure mode analysis fob key',k:''},
+  {cat:'📊 Analysis',l:'Inoperable claims analysis',q:'inoperable analysis',k:''},
   {cat:'📈 Visualization',l:'Failure flow Sankey',q:'failure flow sankey',k:''},
   {cat:'📈 Visualization',l:'Heatmap: system × month',q:'heatmap',k:''},
   {cat:'📈 Visualization',l:'Pareto chart',q:'pareto top 15',k:''},
@@ -3699,6 +3793,7 @@ const PARSE_TIPS={
   worldmap:'Global market distribution',
   mexicomap:'México state-level analysis',
   canadamap:'Canada province-level analysis',
+  failuremode:'Customer failure mode categorization from [C] comments',
 };
 
 // ===== INIT =====
@@ -3733,6 +3828,8 @@ window.addEventListener('load',()=>{
       D['12M']=QUALITIVITY_12M_ROWS.map(row=>{const o={};cols.forEach((c,i)=>{o[c]=row[i]});return o;});
     }
     if(typeof US_SALES_BY_STATE!=='undefined')SALES_ST=US_SALES_BY_STATE;
+    // Pre-compute customer failure modes from [C] comments
+    for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){r._custComment=extractCC(r.comment);r._failureMode=categorizeFailure(r._custComment);}}
     // Load any previously imported data from IndexedDB
     loadImportedData().then(()=>init());
   } else {
@@ -4030,6 +4127,8 @@ async function loadImportedData(){
             if(!existKeys.has(k)){D['12M'].push(r);existKeys.add(k);}
           });
         }
+        // Pre-compute failure modes for imported records
+        for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){if(r._failureMode===undefined){r._custComment=extractCC(r.comment);r._failureMode=categorizeFailure(r._custComment);}}}
         resolve();
       };
       tx.onerror=()=>resolve();
