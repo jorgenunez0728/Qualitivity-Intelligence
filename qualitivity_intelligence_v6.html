@@ -95,6 +95,53 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .disambig button{background:var(--sf2);border:1px solid var(--ac);color:var(--ac);padding:6px 14px;border-radius:16px;font:11px/1 var(--ff);cursor:pointer;transition:all .2s}
 .disambig button:hover{background:var(--ac);color:#000}
 .lo p{color:var(--tx2);font-size:13px}
+/* v8: Splash Screen */
+.splash{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a1628 0%,#06090f 70%);opacity:1;transition:opacity .8s ease}
+.splash.out{opacity:0;pointer-events:none}
+.splash-diamond{font-size:52px;color:var(--ac);margin-bottom:28px;text-shadow:0 0 40px rgba(56,189,248,.35),0 0 80px rgba(56,189,248,.15);animation:glowPulse 2.2s ease infinite}
+.splash-title{font:200 34px 'DM Sans',sans-serif;color:#fff;letter-spacing:10px;text-transform:uppercase;animation:letterReveal .9s ease both}
+.splash-sub{font:300 13px/1 'DM Sans',sans-serif;color:var(--tx2);margin-top:14px;letter-spacing:4px;animation:letterReveal .9s ease .25s both}
+.splash-ver{font:10px 'JetBrains Mono',monospace;color:var(--tx3);margin-top:28px;letter-spacing:1px;animation:letterReveal .9s ease .5s both}
+.splash-line{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);margin:20px 0 0;animation:letterReveal 1s ease .4s both}
+@keyframes glowPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.08)}}
+@keyframes letterReveal{from{opacity:0;transform:translateY(14px);filter:blur(6px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+/* v8: Walkthrough Tour */
+.tour-ov{position:fixed;inset:0;z-index:3000;transition:all .3s}
+.tour-tip{position:fixed;z-index:3002;background:var(--sf);border:1px solid var(--ac);border-radius:14px;padding:18px 22px;max-width:340px;box-shadow:0 8px 40px rgba(56,189,248,.12),0 0 0 1px rgba(56,189,248,.08);animation:fadeUp .35s ease}
+.tour-tip h4{font:600 14px 'DM Sans',sans-serif;color:var(--ac);margin:0 0 8px}
+.tour-tip p{font:12px/1.6 'DM Sans',sans-serif;color:var(--tx2);margin:0 0 14px}
+.tour-nav{display:flex;justify-content:space-between;align-items:center}
+.tour-skip{background:none;border:none;color:var(--tx3);font:11px 'DM Sans';cursor:pointer;padding:4px 8px}
+.tour-skip:hover{color:var(--tx)}
+.tour-next{background:var(--ac);border:none;color:#000;font:600 11px 'DM Sans';padding:7px 20px;border-radius:8px;cursor:pointer;transition:transform .15s}
+.tour-next:hover{transform:scale(1.04)}
+.tour-step{font:10px 'JetBrains Mono',monospace;color:var(--tx3)}
+.tour-spot{position:fixed;z-index:3001;border:2px solid var(--ac);border-radius:8px;box-shadow:0 0 0 4000px rgba(0,0,0,.78);pointer-events:none;transition:all .35s ease}
+/* v8: Auto-complete dropdown */
+.ac-drop{position:absolute;bottom:100%;left:0;right:0;background:var(--sf);border:1px solid var(--bd);border-radius:10px 10px 0 0;max-height:260px;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.5);z-index:100;display:none}
+.ac-item{padding:8px 14px;cursor:pointer;font:12px/1.3 'DM Sans',sans-serif;color:var(--tx2);display:flex;gap:8px;align-items:center;transition:background .1s;border-bottom:1px solid var(--bd)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.sel{background:var(--sf2);color:var(--tx)}
+.ac-item mark{background:transparent;color:var(--ac);font-weight:600}
+.ac-cat{font-size:11px;opacity:.6;width:18px;text-align:center;flex-shrink:0}
+/* v8: Command Palette */
+.cmd-bg{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;animation:fadeUp .2s ease}
+.cmd-pal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;width:90%;max-width:520px;max-height:60vh;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.5)}
+.cmd-inp{width:100%;padding:14px 18px;background:transparent;border:none;border-bottom:1px solid var(--bd);color:var(--tx);font:14px 'DM Sans',sans-serif;outline:none}
+.cmd-inp::placeholder{color:var(--tx3)}
+.cmd-list{overflow-y:auto;max-height:calc(60vh - 50px);padding:6px 0}
+.cmd-cat{font:600 10px 'JetBrains Mono',monospace;color:var(--tx3);padding:10px 18px 4px;letter-spacing:1px;text-transform:uppercase}
+.cmd-it{padding:9px 18px;cursor:pointer;font:13px 'DM Sans',sans-serif;color:var(--tx2);display:flex;align-items:center;gap:10px;transition:background .1s}
+.cmd-it:hover,.cmd-it.sel{background:var(--sf2);color:var(--tx)}
+.cmd-it .cmd-k{margin-left:auto;font:10px 'JetBrains Mono',monospace;color:var(--tx3);background:var(--sf2);padding:2px 6px;border-radius:4px}
+/* v8: Parse bar tooltips */
+.pb .pt[data-tip]{position:relative;cursor:help}
+.pb .pt[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0d1925;border:1px solid var(--bd);padding:5px 10px;border-radius:6px;font:10px/1.3 'DM Sans',sans-serif;color:var(--tx);white-space:nowrap;z-index:50;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+/* v8: Welcome KPI cards */
+.wkpi{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
+.wkc{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;min-width:100px;text-align:center;animation:kpop .5s cubic-bezier(.34,1.56,.64,1) both}
+.wkc .wkv{font:600 20px 'JetBrains Mono',monospace;color:var(--ac)}
+.wkc .wkl{font:10px 'DM Sans',sans-serif;color:var(--tx3);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
 @media(max-width:768px){.pills{display:none}.kstrip{display:none}.m{max-width:98%}.bl{width:110px;font-size:9px}.dst{display:none}.ir textarea{font-size:16px}}
 @media(max-width:480px){.cps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}.cp{white-space:nowrap;flex-shrink:0}}
 /* v6: Insight rows */
@@ -150,6 +197,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 </head>
 <body>
 <div class="lo" id="lo"><div class="lr"></div><p>Initializing Qualitivity Intelligence...</p></div>
+<div class="splash" id="splash" style="display:none">
+<div class="splash-diamond">◆</div>
+<div class="splash-title">Qualitivity Intelligence</div>
+<div class="splash-line"></div>
+<div class="splash-sub">Warranty Analytics Platform · KIA México</div>
+<div class="splash-ver">v7 NLP² · Powered by Data Intelligence</div>
+</div>
 <header class="hdr">
 <div class="hdr-l"><div class="logo">Qi</div><div class="hdr-t">Qualitivity <span>Intelligence</span></div></div>
 <div class="pills">
@@ -159,6 +213,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <button class="pill" onclick="showHistory()" style="cursor:pointer;background:var(--sf2)" title="Query history / Historial">📜</button>
 <button class="pill" onclick="toggleLang()" id="langBtn" style="cursor:pointer;background:var(--sf2)" title="Toggle language">🌐 EN</button>
 <button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button>
+<button class="pill" onclick="startTour()" style="cursor:pointer;background:var(--sf2);font-weight:700" title="Guided Tour / Recorrido guiado">?</button>
 </div>
 </header>
 <div class="kstrip" id="ks"></div>
@@ -172,7 +227,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <button class="dt" data-d="DC">DC</button>
 <button class="dt" data-d="12M">12M</button>
 </div>
-<div class="ir">
+<div class="ir" style="position:relative">
+<div class="ac-drop" id="acDrop"></div>
 <textarea id="inp" placeholder="Pregunta sobre tus claims... / Ask about your claims..." rows="1"></textarea>
 <button class="sb" id="snd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
 </div>
@@ -681,22 +737,23 @@ function parseFollowUp(q,lastI){
 // ===== NLP v2: PARSE TRANSPARENCY BAR (Level 1) =====
 function mkParseBar(I,dataLen){
   const tags=[];
-  tags.push(`<span class="pt hi">${I.type}</span>`);
-  if(I.groupBy)tags.push(`<span class="pt">by ${I.groupBy}</span>`);
-  if(I.metric!=='count')tags.push(`<span class="pt">${I.metric}</span>`);
+  const tip=typeof PARSE_TIPS!=='undefined'&&PARSE_TIPS[I.type]?` data-tip="${PARSE_TIPS[I.type]}"`:'';
+  tags.push(`<span class="pt hi"${tip}>${I.type}</span>`);
+  if(I.groupBy)tags.push(`<span class="pt" data-tip="Grouped by ${I.groupBy} field">by ${I.groupBy}</span>`);
+  if(I.metric!=='count')tags.push(`<span class="pt" data-tip="Sorting/measuring by ${I.metric}">${I.metric}</span>`);
   for(const[k,v]of Object.entries(I.filters||{})){
     if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months')continue;
-    if(k==='_sysCategory')tags.push(`<span class="pt pf">${v}</span>`);
-    else if(k==='_hvac')tags.push(`<span class="pt pf">HVAC</span>`);
-    else if(k==='_months')tags.push(`<span class="pt pf">${Array.isArray(v)?v.length+' months':v}</span>`);
-    else if(k.startsWith('!')){tags.push(`<span class="pt" style="color:var(--rd)">NOT ${k.slice(1)}=${Array.isArray(v)?v.join(','):v}</span>`);}
-    else tags.push(`<span class="pt pf">${k}=${Array.isArray(v)?v.join(' | '):v}</span>`);
+    if(k==='_sysCategory')tags.push(`<span class="pt pf" data-tip="Smart category filter: ${v}">${v}</span>`);
+    else if(k==='_hvac')tags.push(`<span class="pt pf" data-tip="Heating, ventilation & air conditioning filter">HVAC</span>`);
+    else if(k==='_months')tags.push(`<span class="pt pf" data-tip="Temporal filter: specific months">${Array.isArray(v)?v.length+' months':v}</span>`);
+    else if(k.startsWith('!')){tags.push(`<span class="pt" style="color:var(--rd)" data-tip="Excluding this value">NOT ${k.slice(1)}=${Array.isArray(v)?v.join(','):v}</span>`);}
+    else tags.push(`<span class="pt pf" data-tip="Filter: ${k}">${k}=${Array.isArray(v)?v.join(' | '):v}</span>`);
   }
-  tags.push(`<span class="pt">${fN(dataLen)} claims</span>`);
-  if(I.limit&&I.limit!==10)tags.push(`<span class="pt">limit ${I.limit}</span>`);
-  if(I._confidence)tags.push(`<span class="pt pc">conf:${I._confidence}</span>`);
-  if(I._followUp)tags.push(`<span class="pt pc">↩ follow-up</span>`);
-  if(I._fuzzyMatch)tags.push(`<span class="pt pc">≈ fuzzy: ${I._fuzzyMatch}</span>`);
+  tags.push(`<span class="pt" data-tip="Records matching all filters">${fN(dataLen)} claims</span>`);
+  if(I.limit&&I.limit!==10)tags.push(`<span class="pt" data-tip="Max results to show">limit ${I.limit}</span>`);
+  if(I._confidence)tags.push(`<span class="pt pc" data-tip="Parser confidence score (higher = more certain)">conf:${I._confidence}</span>`);
+  if(I._followUp)tags.push(`<span class="pt pc" data-tip="Modified from previous query">↩ follow-up</span>`);
+  if(I._fuzzyMatch)tags.push(`<span class="pt pc" data-tip="Part name matched approximately from data index">≈ fuzzy: ${I._fuzzyMatch}</span>`);
   return`<div class="pb">🔍 ${tags.join(' · ')}</div>`;
 }
 
@@ -2993,7 +3050,7 @@ function genPresentation(I){
   h+=`<button onclick="_presNav('${uid}',-1)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px">← Prev</button>`;
   h+=`<span id="${uid}_pg" style="font:12px 'JetBrains Mono',monospace;color:var(--tx3)">1 / ${slides.length}</span>`;
   h+=`<button onclick="_presNav('${uid}',1)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px">Next →</button>`;
-  h+=`<button onclick="document.documentElement.requestFullscreen().catch(()=>{})" style="background:var(--acd);border:1px solid var(--ac);color:var(--ac);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px">Fullscreen</button>`;
+  h+=`<button onclick="showSplash(()=>{document.documentElement.requestFullscreen().catch(()=>{})})" style="background:var(--acd);border:1px solid var(--ac);color:var(--ac);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px">Fullscreen</button>`;
   h+=`</div>`;
   h+=`<div style="position:absolute;bottom:0;left:0;height:3px;background:var(--ac);border-radius:2px;transition:width .3s" id="${uid}_bar" style="width:${100/slides.length}%"></div>`;
   h+=`</div>`;
@@ -3081,9 +3138,30 @@ const inp=document.getElementById('inp');
 function addM(c,u){const d=document.createElement('div');d.className=`m ${u?'u':'b'}`;if(u)d.textContent=c;else d.innerHTML=c;ch.appendChild(d);ch.scrollTop=ch.scrollHeight;if(!u)setTimeout(animKPIs,60);}
 function showT(){const d=document.createElement('div');d.className='m b';d.id='typ';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';ch.appendChild(d);ch.scrollTop=ch.scrollHeight;}
 function hideT(){const e=document.getElementById('typ');if(e)e.remove();}
-function send(){const q=inp.value.trim();if(!q)return;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
-inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-inp.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+function send(){const q=inp.value.trim();if(!q)return;const drop=document.getElementById('acDrop');if(drop)drop.style.display='none';_acIdx=-1;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
+inp.addEventListener('keydown',e=>{
+  const drop=document.getElementById('acDrop');
+  const acVisible=drop&&drop.style.display==='block';
+  if(e.key==='ArrowDown'&&acVisible){e.preventDefault();_acNav(1);return;}
+  if(e.key==='ArrowUp'&&acVisible){e.preventDefault();_acNav(-1);return;}
+  if(e.key==='Escape'&&acVisible){drop.style.display='none';_acIdx=-1;return;}
+  if(e.key==='Tab'&&acVisible){
+    e.preventDefault();
+    const sel=drop.querySelector('.ac-item.sel');
+    if(sel){inp.value=sel.dataset.q;drop.style.display='none';_acIdx=-1;}
+    return;
+  }
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    if(acVisible&&_acIdx>=0){
+      const sel=drop.querySelector('.ac-item.sel');
+      if(sel){inp.value=sel.dataset.q;drop.style.display='none';_acIdx=-1;send();return;}
+    }
+    send();
+  }
+});
+inp.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';_acUpdate(this.value.trim());});
+document.addEventListener('click',e=>{const drop=document.getElementById('acDrop');if(drop&&!e.target.closest('.ir'))drop.style.display='none';});
 document.getElementById('snd').addEventListener('click',send);
 document.getElementById('dst').addEventListener('click',e=>{if(e.target.classList.contains('dt')){aDS=e.target.dataset.d;document.querySelectorAll('.dt').forEach(b=>b.classList.toggle('a',b.dataset.d===aDS));}});
 
@@ -3096,17 +3174,305 @@ const CHIPS=[
 
 function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
 
+// ===== v8: SPLASH SCREEN =====
+function showSplash(cb){
+  const sp=document.getElementById('splash');
+  sp.style.display='flex';sp.classList.remove('out');
+  setTimeout(()=>{sp.classList.add('out');setTimeout(()=>{sp.style.display='none';if(cb)cb();},800);},2600);
+}
+
+// ===== v8: WALKTHROUGH TOUR =====
+const TOUR=[
+  {el:'inp',t:'Ask Anything',d:'Type questions in natural language — English, Spanish, or Korean. Try <b>"top 10 parts by cost USA"</b> or <b>"análisis de batería México"</b>.',pos:'top'},
+  {el:'cps',t:'Smart Suggestions',d:'Click any chip to instantly run a powerful analysis. These showcase climate correlation, intelligence briefing, and HVAC analysis.',pos:'top'},
+  {el:'ch',t:'Interactive Results',d:'Charts, maps, tables, and AI narratives appear here. <b>Click any bar</b> to drill deeper. Try follow-ups like <b>"same but for Mexico"</b> or <b>"now by cost"</b>.',pos:'bottom'},
+  {el:'dst',t:'Dataset & Tools',d:'Switch between 3-Month, DC, 12-Month, or All data. Use ⚙️ Custom Vars for advanced configuration.',pos:'top'},
+  {el:'pills',t:'Power Tools',d:'⭐ Save favorite queries · 📜 View history · 📥 Import data · 🌐 Language toggle · 🖨️ Executive report · <b>Ctrl+K</b> for command palette.',pos:'bottom'},
+  {el:null,t:'You\'re Ready',d:'Try these power commands:<br>• <b>"presentation mode"</b> — fullscreen executive dashboard<br>• <b>"dealer scorecard"</b> — radar chart analysis<br>• <b>"failure flow"</b> — Sankey cost flow<br>• <b>"what if savings"</b> — interactive simulator',pos:'center'},
+];
+let _tourIdx=-1;
+function startTour(){
+  localStorage.removeItem('qi_tour_done');
+  _tourIdx=0;_tourStep(0);
+}
+function _tourStep(idx){
+  _tourIdx=idx;
+  // Remove existing
+  const old=document.getElementById('tourSpot');if(old)old.remove();
+  const oldTip=document.getElementById('tourTip');if(oldTip)oldTip.remove();
+  if(idx>=TOUR.length){endTour();return;}
+  const step=TOUR[idx];
+  const total=TOUR.length;
+  // Spotlight
+  if(step.el){
+    const target=document.getElementById(step.el);
+    if(target){
+      const r=target.getBoundingClientRect();
+      const pad=8;
+      const spot=document.createElement('div');
+      spot.className='tour-spot';spot.id='tourSpot';
+      spot.style.cssText=`left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px`;
+      document.body.appendChild(spot);
+    }
+  } else {
+    // Center spotlight (no element)
+    const spot=document.createElement('div');
+    spot.className='tour-spot';spot.id='tourSpot';
+    spot.style.cssText='left:50%;top:50%;width:0;height:0;transform:translate(-50%,-50%);border:none;box-shadow:0 0 0 4000px rgba(0,0,0,.78)';
+    document.body.appendChild(spot);
+  }
+  // Tooltip
+  const tip=document.createElement('div');
+  tip.className='tour-tip';tip.id='tourTip';
+  tip.innerHTML=`<h4>${step.t}</h4><p>${step.d}</p><div class="tour-nav"><span class="tour-step">${idx+1} / ${total}</span><div><button class="tour-skip" onclick="endTour()">Skip</button><button class="tour-next" onclick="_tourStep(${idx+1})">${idx===total-1?'Done':'Next →'}</button></div></div>`;
+  document.body.appendChild(tip);
+  // Position tooltip
+  if(step.el){
+    const target=document.getElementById(step.el);
+    if(target){
+      const r=target.getBoundingClientRect();
+      if(step.pos==='top'){
+        tip.style.left=Math.max(12,r.left)+'px';
+        tip.style.bottom=(window.innerHeight-r.top+16)+'px';
+      } else {
+        tip.style.left=Math.max(12,r.left)+'px';
+        tip.style.top=(r.bottom+16)+'px';
+      }
+    }
+  } else {
+    tip.style.left='50%';tip.style.top='50%';tip.style.transform='translate(-50%,-50%)';
+  }
+}
+function endTour(){
+  _tourIdx=-1;
+  const s=document.getElementById('tourSpot');if(s)s.remove();
+  const t=document.getElementById('tourTip');if(t)t.remove();
+  localStorage.setItem('qi_tour_done','1');
+}
+
+// ===== v8: AUTO-COMPLETE =====
+const AC_TEMPLATES=[
+  {l:'Top 10 parts by cost',q:'top 10 parts by cost',c:'💡'},
+  {l:'Climate correlation analysis',q:'climate correlation analysis',c:'💡'},
+  {l:'Dealer scorecard radar',q:'dealer scorecard',c:'💡'},
+  {l:'Failure flow Sankey',q:'failure flow sankey',c:'💡'},
+  {l:'What-if savings simulator',q:'what if savings',c:'💡'},
+  {l:'Presentation mode',q:'presentation mode',c:'💡'},
+  {l:'Intelligence briefing',q:'intelligence briefing',c:'💡'},
+  {l:'Pareto top 15 parts',q:'pareto top 15 parts',c:'💡'},
+  {l:'Monthly trend',q:'monthly trend',c:'💡'},
+  {l:'HVAC analysis USA July temperature',q:'HVAC analysis USA July map temperature',c:'💡'},
+  {l:'Battery analysis CL4',q:'battery analysis CL4',c:'💡'},
+  {l:'Map USA claims normalized',q:'map USA claims normalized by sales',c:'💡'},
+  {l:'Compare projects',q:'compare projects',c:'💡'},
+  {l:'Flag dealer anomalies',q:'flag dealer anomalies',c:'💡'},
+  {l:'Cost breakdown waterfall',q:'cost breakdown waterfall',c:'💡'},
+  {l:'Last quarter trend',q:'last quarter trend',c:'💡'},
+  {l:'USA and Mexico top parts',q:'top parts USA and Mexico',c:'💡'},
+];
+let _acIdx=-1;
+function _acDebounce(fn,ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms);};}
+const _acUpdate=_acDebounce(function(q){
+  const drop=document.getElementById('acDrop');
+  if(!q||q.length<2){drop.style.display='none';_acIdx=-1;return;}
+  const lo=q.toLowerCase();
+  const items=[];
+  // 1. History
+  try{const h=JSON.parse(localStorage.getItem('qi_query_history')||'[]');
+    for(const x of h){if(x.toLowerCase().includes(lo)&&items.length<2)items.push({l:x,q:x,c:'📜'});}
+  }catch(e){}
+  // 2. Saved
+  try{const s=JSON.parse(localStorage.getItem('qi_saved_queries')||'[]');
+    for(const x of s){if(x.q&&x.q.toLowerCase().includes(lo)&&items.length<3)items.push({l:x.q,q:x.q,c:'⭐'});}
+  }catch(e){}
+  // 3. Templates
+  for(const t of AC_TEMPLATES){if(t.l.toLowerCase().includes(lo)&&items.length<5)items.push(t);}
+  // 4. Part names from index
+  if(_IDX&&lo.length>3){
+    const partQ=lo.replace(/\b(top|ranking|analysis|trend|map|cost|show|me|the|in|for)\b/g,'').trim();
+    if(partQ.length>2){
+      for(const p of _IDX.parts){
+        if(p.toLowerCase().includes(partQ)&&items.length<6)items.push({l:p,q:p+' analysis',c:'🔧'});
+      }
+    }
+  }
+  // Deduplicate
+  const seen=new Set();const unique=[];
+  for(const it of items){if(!seen.has(it.q.toLowerCase())){seen.add(it.q.toLowerCase());unique.push(it);}}
+  if(!unique.length){drop.style.display='none';_acIdx=-1;return;}
+  drop.innerHTML=unique.map((it,i)=>{
+    const hl=it.l.replace(new RegExp('('+lo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>');
+    return`<div class="ac-item${i===_acIdx?' sel':''}" data-idx="${i}" data-q="${esc(it.q)}"><span class="ac-cat">${it.c}</span><span>${hl}</span></div>`;
+  }).join('');
+  drop.style.display='block';
+  // Click handlers
+  drop.querySelectorAll('.ac-item').forEach(el=>{
+    el.addEventListener('click',()=>{inp.value=el.dataset.q;drop.style.display='none';_acIdx=-1;send();});
+  });
+},150);
+
+function _acNav(dir){
+  const drop=document.getElementById('acDrop');
+  const items=drop.querySelectorAll('.ac-item');
+  if(!items.length)return;
+  items.forEach(el=>el.classList.remove('sel'));
+  _acIdx=(_acIdx+dir+items.length)%items.length;
+  items[_acIdx].classList.add('sel');
+  items[_acIdx].scrollIntoView({block:'nearest'});
+}
+
+// ===== v8: COMMAND PALETTE =====
+const CMDS=[
+  {cat:'📊 Analysis',l:'Top parts ranking',q:'top 10 parts by cost',k:'Ctrl+1'},
+  {cat:'📊 Analysis',l:'Climate correlation',q:'climate correlation analysis',k:''},
+  {cat:'📊 Analysis',l:'Dealer scorecard + radar',q:'dealer scorecard',k:''},
+  {cat:'📊 Analysis',l:'Intelligence briefing',q:'intelligence briefing',k:''},
+  {cat:'📊 Analysis',l:'Battery deep dive',q:'battery analysis',k:''},
+  {cat:'📊 Analysis',l:'Period comparison (3M vs 12M)',q:'period comparison improvement',k:''},
+  {cat:'📊 Analysis',l:'Supplier risk scorecard',q:'supplier risk scorecard',k:''},
+  {cat:'📈 Visualization',l:'Failure flow Sankey',q:'failure flow sankey',k:''},
+  {cat:'📈 Visualization',l:'Heatmap: system × month',q:'heatmap',k:''},
+  {cat:'📈 Visualization',l:'Pareto chart',q:'pareto top 15',k:''},
+  {cat:'📈 Visualization',l:'Scatter: mileage vs cost',q:'scatter mileage cost',k:''},
+  {cat:'📈 Visualization',l:'Donut: by system',q:'donut by system',k:''},
+  {cat:'🗺️ Maps',l:'USA map',q:'map USA claims',k:''},
+  {cat:'🗺️ Maps',l:'Mexico map',q:'mexico map',k:''},
+  {cat:'🗺️ Maps',l:'Canada map',q:'canada map',k:''},
+  {cat:'🗺️ Maps',l:'World map',q:'world map',k:''},
+  {cat:'🔧 Tools',l:'What-If savings simulator',q:'what if savings',k:''},
+  {cat:'🔧 Tools',l:'Presentation mode',q:'presentation mode',k:'F5'},
+  {cat:'🔧 Tools',l:'Monthly trend',q:'monthly trend',k:''},
+  {cat:'🔧 Tools',l:'Export to CSV',q:'export csv',k:''},
+  {cat:'🔧 Tools',l:'Export to Excel',q:'export excel',k:''},
+  {cat:'🔧 Tools',l:'Flag anomalies',q:'flag dealer anomalies',k:''},
+  {cat:'🔧 Tools',l:'Executive report',q:'executive report',k:''},
+  {cat:'🎯 Guide',l:'Start guided tour',q:'_tour',k:''},
+  {cat:'🎯 Guide',l:'Temporal: last quarter',q:'last quarter trend',k:''},
+  {cat:'🎯 Guide',l:'Compound: USA + Mexico',q:'top parts USA and Mexico',k:''},
+  {cat:'🎯 Guide',l:'Follow-up: "same but for..."',q:'same but for Mexico',k:''},
+];
+let _cmdIdx=0;
+function showCmdPal(){
+  if(document.getElementById('cmdBg'))return;
+  const bg=document.createElement('div');bg.className='cmd-bg';bg.id='cmdBg';
+  bg.innerHTML=`<div class="cmd-pal"><input class="cmd-inp" id="cmdInp" placeholder="Type a command... / Escribe un comando..." autocomplete="off"><div class="cmd-list" id="cmdList"></div></div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click',e=>{if(e.target===bg)closeCmdPal();});
+  const inp2=document.getElementById('cmdInp');
+  inp2.focus();
+  filterCmds('');
+  inp2.addEventListener('input',()=>filterCmds(inp2.value));
+  inp2.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeCmdPal();return;}
+    if(e.key==='ArrowDown'){e.preventDefault();_cmdNav(1);return;}
+    if(e.key==='ArrowUp'){e.preventDefault();_cmdNav(-1);return;}
+    if(e.key==='Enter'){e.preventDefault();execCmd();return;}
+  });
+}
+function closeCmdPal(){const bg=document.getElementById('cmdBg');if(bg)bg.remove();}
+function filterCmds(q){
+  const lo=q.toLowerCase();
+  const filtered=lo?CMDS.filter(c=>c.l.toLowerCase().includes(lo)||c.cat.toLowerCase().includes(lo)):CMDS;
+  const list=document.getElementById('cmdList');
+  let html='';let lastCat='';_cmdIdx=0;let idx=0;
+  for(const c of filtered){
+    if(c.cat!==lastCat){html+=`<div class="cmd-cat">${c.cat}</div>`;lastCat=c.cat;}
+    const hl=lo?c.l.replace(new RegExp('('+lo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:transparent;color:var(--ac);font-weight:600">$1</mark>'):c.l;
+    html+=`<div class="cmd-it${idx===0?' sel':''}" data-idx="${idx}" data-q="${esc(c.q)}">${hl}${c.k?`<span class="cmd-k">${c.k}</span>`:''}</div>`;
+    idx++;
+  }
+  if(!filtered.length)html='<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">No commands match</div>';
+  list.innerHTML=html;
+  list.querySelectorAll('.cmd-it').forEach(el=>{
+    el.addEventListener('click',()=>{const q2=el.dataset.q;closeCmdPal();if(q2==='_tour'){startTour();}else{inp.value=q2;send();}});
+  });
+}
+function _cmdNav(dir){
+  const list=document.getElementById('cmdList');
+  const items=list.querySelectorAll('.cmd-it');
+  if(!items.length)return;
+  items.forEach(el=>el.classList.remove('sel'));
+  _cmdIdx=(_cmdIdx+dir+items.length)%items.length;
+  items[_cmdIdx].classList.add('sel');
+  items[_cmdIdx].scrollIntoView({block:'nearest'});
+}
+function execCmd(){
+  const list=document.getElementById('cmdList');
+  const sel=list.querySelector('.cmd-it.sel');
+  if(!sel)return;
+  const q2=sel.dataset.q;
+  closeCmdPal();
+  if(q2==='_tour'){startTour();}
+  else{inp.value=q2;send();}
+}
+
+// ===== v8: PARSE BAR TOOLTIPS =====
+const PARSE_TIPS={
+  ranking:'Top items sorted by volume or cost',
+  analysis:'Deep dive into a specific part or system',
+  climate:'Temperature/humidity correlation with claims',
+  trend:'Monthly evolution over time',
+  map:'Geographic distribution by state/region',
+  heatmap:'2D matrix showing intensity patterns',
+  pareto:'80/20 analysis — vital few vs trivial many',
+  summary:'High-level dashboard overview',
+  comparison:'Side-by-side project or market comparison',
+  anomaly:'Flag unusual dealer or part patterns',
+  whatif:'Interactive cost savings simulator',
+  sankey:'Flow: System → Part → Failure → Region',
+  dealerscore:'Multi-axis dealer quality scorecard',
+  presentation:'Fullscreen executive dashboard slides',
+  insights:'AI-generated intelligence briefing',
+  alert:'Early warning spike detection',
+  forecast:'Linear regression trend projection',
+  detail:'Raw claim records table',
+  donut:'Proportional distribution chart',
+  scatter:'Mileage vs cost correlation plot',
+  export:'Download data as CSV file',
+  exportxls:'Download data as Excel file',
+  report:'Printable executive summary report',
+  costbreakdown:'Parts vs labor cost waterfall',
+  mileagehist:'Mileage distribution histogram',
+  repeatvin:'Vehicles with multiple warranty claims',
+  supplierrisk:'Supplier quality risk assessment',
+  periodcompare:'3-month vs 12-month improvement',
+  stratification:'Hierarchical breakdown analysis',
+  worldmap:'Global market distribution',
+  mexicomap:'México state-level analysis',
+  canadamap:'Canada province-level analysis',
+};
+
 // ===== INIT =====
 function init(){
   const all=[...D['3M'],...D['DC'],...D['12M']];
   document.getElementById('pC').innerHTML=`Claims: <b>${fN(all.length)}</b>`;
   buildIdx(); // Level 2: build fuzzy entity index
   mkChips();
-  addM(`<p><b>Qualitivity Intelligence v7</b></p>
-<p>${fN(all.length)} warranty claims loaded — <b>3M</b> ${fN(D['3M'].length)} · <b>DC</b> ${fN(D['DC'].length)} · <b>12M</b> ${fN(D['12M'].length)}</p>
-<p style="margin-top:8px;font-size:12px;color:var(--tx2)">Type a question or tap a suggestion below.</p>
-<span class="st">KMX Qualitivity Intelligence · v7 NLP² · Mar 2026</span>`,false);
-  document.getElementById('lo').style.display='none';inp.focus();
+  // Calculate welcome KPIs
+  const totalCost=all.reduce((s,r)=>s+(r.totalCost||0),0);
+  const markets=[...new Set(all.map(r=>r.nation).filter(Boolean))].length;
+  const uniqueParts=_IDX?_IDX.parts.length:[...new Set(all.map(r=>r.partNM).filter(Boolean))].length;
+  addM(`<p style="font-size:16px;margin-bottom:2px"><b>Qualitivity Intelligence</b> <span style="color:var(--tx3);font-size:11px">v7 NLP²</span></p>
+<div class="wkpi">
+<div class="wkc" style="animation-delay:0s"><div class="wkv"><span class="anim-kpi" data-target="${fN(all.length)}">0</span></div><div class="wkl">Claims</div></div>
+<div class="wkc" style="animation-delay:.1s"><div class="wkv"><span class="anim-kpi" data-target="${f$(totalCost)}">$0</span></div><div class="wkl">Total Cost</div></div>
+<div class="wkc" style="animation-delay:.2s"><div class="wkv"><span class="anim-kpi" data-target="${markets}">0</span></div><div class="wkl">Markets</div></div>
+<div class="wkc" style="animation-delay:.3s"><div class="wkv"><span class="anim-kpi" data-target="${fN(uniqueParts)}">0</span></div><div class="wkl">Unique Parts</div></div>
+</div>
+<p style="font-size:11px;color:var(--tx3);margin-top:4px">3M ${fN(D['3M'].length)} · DC ${fN(D['DC'].length)} · 12M ${fN(D['12M'].length)} · Type a question or tap a suggestion · <b>Ctrl+K</b> command palette</p>`,false);
+  // Hide loader, show splash, then focus
+  document.getElementById('lo').style.display='none';
+  showSplash(()=>{
+    inp.focus();
+    // Auto-start tour on first visit
+    if(!localStorage.getItem('qi_tour_done')){
+      setTimeout(()=>startTour(),600);
+    }
+  });
+  // Setup keyboard shortcuts
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();showCmdPal();}
+  });
 }
 
 window.addEventListener('load',()=>{
