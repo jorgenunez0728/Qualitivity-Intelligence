@@ -1067,10 +1067,16 @@ const _FM_PARSE={not_starting:/\bnot\s*start|no\s*(arranca|enciende|prende)|won.
 if(!I.filters._natSearch){for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(lo)){I.filters._failureMode=fmId;break;}}}
 // Subcategory detection — match subcategory labels as query terms
 if(!I.filters._failureSub){for(const sub of Object.values(CFM_SUB_LOOKUP)){const sl=sub.label.toLowerCase().replace(/[^a-z0-9\s]/g,'');if(lo.includes(sl)&&sl.length>4){I.filters._failureSub=sub.id;if(!I.filters._failureMode)I.filters._failureMode=sub.cat;break;}}}
+// VIN detail intent
+if(/^vin\s+\w/i.test(lo))I.type='vin_detail';
+// CFM comments table intent — when failure mode/subcategory with "comments"/"comentarios" etc.
+if((I.filters._failureSub||I.filters._failureMode)&&/comment|comentario|detail|drill|show|ver|lista|list|table|tabla/i.test(lo))I.type='cfm_comments';
+// If a subcategory is detected and no other explicit type, default to cfm_comments (drill-down behavior)
+if(I.filters._failureSub&&(I.type==='unknown'||I.type==='ranking'))I.type='cfm_comments';
 // Failure mode analysis intent detection
 if(/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|customer\s*(complaint|failure)|queja.*cliente|고장\s*모드|failure\s*mode\s*analysis/i.test(lo))I.type='failuremode';
 // When failure mode filter active with part/system, route to analysis
-if((I.filters._failureMode||I.filters._failureSub)&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
+if((I.filters._failureMode||I.filters._failureSub)&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='cfm_comments'&&I.type!=='vin_detail'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -1767,7 +1773,7 @@ function failureModeSummary(data){
       h+='<div style="margin:-2px 0 4px 16px;display:flex;flex-wrap:wrap;gap:3px">';
       subs.forEach(s=>{
         const sl=cfmSubLabel(s.sub);
-        h+=`<span onclick="inp.value='${esc(sl)} analysis';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:1px 6px;border-radius:8px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace" title="Click to drill down">${esc(sl)} <b style="color:var(--tx2)">${s.count}</b></span>`;
+        h+=`<span onclick="inp.value='${esc(sl)} comments';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:1px 6px;border-radius:8px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace" title="Click to see all customer comments">${esc(sl)} <b style="color:var(--tx2)">${s.count}</b></span>`;
       });
       h+='</div>';
     }
@@ -1777,7 +1783,7 @@ function failureModeSummary(data){
   const partCtx=data.length>0?(data[0].partNM||''):'';
   items.filter(([id])=>id!=='other').forEach(([id])=>{
     const shortLabel=cfmLabel(id);
-    const q=id+' '+(partCtx?partCtx+' ':'')+'analysis';
+    const q=id+' '+(partCtx?partCtx+' ':'')+'comments';
     h+=`<button onclick="inp.value='${esc(q)}';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer">${shortLabel}</button>`;
   });
   h+='</div></div>';
@@ -2113,6 +2119,100 @@ function genDetail(I){
   if(!data.length)return'<p>No claims found.</p>';
   let h=`<p><b>Claim Details</b> (${data.length} records)</p>`;
   h+=mkTbl(data,[{l:'VIN',k:'vin',f:v=>v?'…'+String(v).slice(-6):''},{l:'Project',k:'proj',f:v=>esc(v||'')},{l:'Part',k:'partNM',f:v=>esc(tr(v,22))},{l:'Cause',k:'causeCode',f:v=>v?`<span style="font-family:'JetBrains Mono',monospace;color:var(--yl)">${esc(v)}</span>`:''},{l:'Nature',k:'natName',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'},{l:'Cost',k:'totalCost',f:v=>f$(v)}]);
+  return h;
+}
+
+// ===== CFM COMMENTS TABLE (drill-down from subcategory labels) =====
+function genCfmComments(I){
+  const data=flt(gDS(),I.filters);
+  const withCC=data.filter(r=>r._custComment&&r._custComment.length>=8);
+  if(!withCC.length)return'<p>No customer comments found for this filter. / Sin comentarios de cliente.</p>';
+  const subId=I.filters._failureSub;const catId=I.filters._failureMode;
+  const titleLabel=subId?cfmFullLabel(catId,subId):catId?cfmLabel(catId):'All Failure Modes';
+  const fd=fdsc(I.filters);
+  let h=`<p><b>Customer Comments — ${esc(titleLabel)}</b>${fd?' | '+esc(fd):''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Comments',fN(withCC.length),'var(--ac)'],['Total Claims',fN(data.length),'var(--gn)'],['Avg Mileage',fN(withCC.reduce((s,r)=>s+(r.mileage||0),0)/withCC.length)+' km','var(--pu)'],['Total Cost',f$(withCC.reduce((s,r)=>s+(r.totalCost||0),0)),'var(--or)']]);
+  // Comments table — each row is a customer comment with VIN clickable
+  h+='<div class="tw"><table><thead><tr><th style="width:60px">VIN</th><th>Customer Description [C]</th><th>Part</th><th>Project</th><th>Market</th><th>Mileage</th><th>Cost</th></tr></thead><tbody>';
+  withCC.slice(0,100).forEach(r=>{
+    const vinShort=r.vin?'…'+String(r.vin).slice(-6):'—';
+    const vinFull=r.vin||'';
+    h+=`<tr>`;
+    h+=`<td><span style="color:var(--ac);cursor:pointer;text-decoration:underline;font-family:'JetBrains Mono',monospace;font-size:10px" onclick="inp.value='vin ${esc(vinFull)}';send()" title="Click for VIN detail: ${esc(vinFull)}">${vinShort}</span></td>`;
+    h+=`<td style="font-size:11px;max-width:400px;white-space:normal;line-height:1.3">${esc(tr(r._custComment,250))}</td>`;
+    h+=`<td style="font-size:10px">${esc(tr(r.partNM||'',20))}</td>`;
+    h+=`<td>${esc(r.proj||'')}</td>`;
+    h+=`<td>${esc(r.nation||'')}</td>`;
+    h+=`<td style="font-family:'JetBrains Mono',monospace;font-size:10px">${fN(r.mileage)} km</td>`;
+    h+=`<td style="font-family:'JetBrains Mono',monospace;font-size:10px">${f$(r.totalCost)}</td>`;
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  if(withCC.length>100)h+=`<p style="font-size:10px;color:var(--tx3)">Showing first 100 of ${fN(withCC.length)} comments.</p>`;
+  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(withCC.length)} customer comments</span>`;
+  return h;
+}
+
+// ===== VIN DETAIL VIEW =====
+function genVinDetail(I){
+  const vinQ=(I._rawQuery||'').replace(/^vin\s*/i,'').trim();
+  if(!vinQ)return'<p>Please specify a VIN.</p>';
+  const all=gDS();
+  const matches=all.filter(r=>r.vin&&String(r.vin).includes(vinQ));
+  if(!matches.length)return`<p>No claims found for VIN containing "${esc(vinQ)}".</p>`;
+  const r0=matches[0];
+  const vinFull=r0.vin||vinQ;
+  let h=`<p><b>VIN Detail — ${esc(vinFull)}</b></p>`;
+  // Vehicle info card
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px">';
+  const info=[
+    ['VIN',vinFull,'var(--ac)'],
+    ['Project',r0.proj||'—','var(--gn)'],
+    ['System',r0.system||'—','var(--pu)'],
+    ['Nation',r0.nation||'—','var(--yl)'],
+    ['Region',r0.region||'—','var(--or)'],
+    ['Dealer',r0.dealer||'—','var(--ac)'],
+    ['State',r0.state?((ST_NAMES[r0.state]||r0.state)+' ('+r0.state+')'):'—','var(--gn)'],
+    ['Supplier',tr(r0.devName||'—',30),'var(--tx2)']
+  ];
+  info.forEach(([l,v,c])=>{
+    h+=`<div style="background:var(--sf2);border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:var(--tx3);text-transform:uppercase;margin-bottom:2px">${l}</div><div style="font-size:12px;color:${c};font-weight:600;word-break:break-all">${esc(v)}</div></div>`;
+  });
+  h+='</div>';
+  // All claims for this VIN
+  h+=`<p style="font-size:11px;color:var(--tx2);margin:8px 0 4px"><b>${matches.length} claim(s) for this VIN:</b></p>`;
+  h+='<div class="tw"><table><thead><tr><th>Month</th><th>Part</th><th>Nature</th><th>Cause</th><th>Mileage</th><th>Use Period</th><th>Cost</th><th>Safety</th></tr></thead><tbody>';
+  matches.forEach(r=>{
+    h+=`<tr>`;
+    h+=`<td>${esc(r.confMonth||'')}</td>`;
+    h+=`<td style="font-size:10px">${esc(tr(r.partNM||'',25))}</td>`;
+    h+=`<td style="font-size:10px">${esc(tr(r.natName||'',25))}</td>`;
+    h+=`<td style="font-family:'JetBrains Mono',monospace">${esc(r.causeCode||'')}</td>`;
+    h+=`<td style="font-family:'JetBrains Mono',monospace">${fN(r.mileage)} km</td>`;
+    h+=`<td>${fN(r.useP,0)} mo</td>`;
+    h+=`<td style="font-family:'JetBrains Mono',monospace">${f$(r.totalCost)}</td>`;
+    h+=`<td>${r.safety==='Y'?'⚠️':''}</td>`;
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  // Customer comments
+  const withCC=matches.filter(r=>r._custComment);
+  if(withCC.length){
+    h+=`<p style="font-size:11px;color:var(--tx2);margin:10px 0 4px"><b>Customer Comments [C]:</b></p>`;
+    withCC.forEach(r=>{
+      const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
+      h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:8px 12px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0;line-height:1.4">"${esc(r._custComment)}" <div style="color:var(--tx3);margin-top:4px;font-size:10px">${esc(fmTag)} · ${esc(r.partNM||'')} · ${r.confMonth||''} · ${fN(r.mileage)} km · ${f$(r.totalCost)}</div></div>`;
+    });
+  }
+  // Full dealer comment (raw)
+  const withRaw=matches.filter(r=>r.comment);
+  if(withRaw.length){
+    h+=`<p style="font-size:11px;color:var(--tx2);margin:10px 0 4px"><b>Full Dealer Report:</b></p>`;
+    withRaw.forEach(r=>{
+      h+=`<div style="background:var(--sf2);padding:8px 12px;margin:4px 0;font-size:10px;color:var(--tx3);border-radius:6px;line-height:1.4;white-space:pre-wrap;word-break:break-word;font-family:'JetBrains Mono',monospace">${esc(r.comment||'')}</div>`;
+    });
+  }
+  h+=`<span class="st">Qualitivity ${dsl()} · VIN ${esc(vinFull)}</span>`;
   return h;
 }
 
@@ -3290,6 +3390,11 @@ function suggest(I,data){
       suggestions.push({l:'Climate correlation',q:`Climate correlation analysis ${I.filters.partNM||''}`});
       if(topPart)suggestions.push({l:`Full analysis: ${tr(topPart,20)}`,q:`Analysis ${topPart}`});
       break;
+    case'cfm_comments':
+      suggestions.push({l:'Full failure mode analysis',q:'failure mode analysis'});
+      suggestions.push({l:'Dashboard summary',q:'Summary dashboard overview'});
+      if(I.filters._failureMode)suggestions.push({l:`${cfmLabel(I.filters._failureMode)} analysis`,q:`${I.filters._failureMode} failure mode analysis`});
+      break;
     case'map':case'mexicomap':case'canadamap':case'worldmap':
       suggestions.push({l:'Climate correlation analysis',q:'Climate correlation analysis'});
       suggestions.push({l:'Dealer anomaly detection',q:'Flag dealer anomalies'});
@@ -3649,6 +3754,8 @@ function proc(q){
     case'scatter':return _wrap(mkScatter(flt(gDS(),I.filters).slice(0,300),'Mileage vs Cost'));
     case'stratification':return _wrap((I.filters.partNM||I.filters.system||I.filters._hvac)?genAnalysis(I):genSummary(I));
     case'detail':return _wrap(genDetail(I));
+    case'cfm_comments':return _wrap(genCfmComments(I));
+    case'vin_detail':return _wrap(genVinDetail(I));
     case'insights':return _wrap(genInsights(I));
     case'alert':return _wrap(genAlerts(I));
     case'forecast':return _wrap(genForecast(I));
