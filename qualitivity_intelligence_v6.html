@@ -855,11 +855,13 @@ else if(/ac\s|a\/c|hvac|air\s*cond|aire\s*acond|cooling\b|enfri|not\s*cool|no\s*
   I.filters._hvac=true;
 }
 // Failure mode / symptom text search — detect symptom keywords in query
-const _SYMPTOM_KW=/noise|ruido|crack|pop\b|vibra|leak|fuga|squeak|rechinido|inoper|short|corto|malfunc|rattle|traqueteo|loose|floj|stuck|atorad|overheat|sobreca|no\s*(funciona|enciende|arranca|enfr[ií]a|program|responde|abre|cierra|trabaja|prende|sirve|jala)|not\s*(work|start|cool|open|clos|respond|function)|can.?t\s*(program|start|open|close)|소음|진동|누수/;
+const _SYMPTOM_KW=/noise|ruido|crack|pop\b|vibra|leak|fuga|squeak|rechinido|inoper|short|corto|malfunc|rattle|traqueteo|loose|floj|stuck|atorad|overheat|sobreca|flicker|parpadea|intermit|drain|descarg|corrosi|corros|warp|deform|misalign|desalinea|no\s*(funciona|enciende|arranca|enfr[ií]a|program|responde|abre|cierra|trabaja|prende|sirve|jala|detecta|comunica|sincroniza)|not\s*(work|start|cool|open|clos|respond|function|detect|program|recogni|pair|sync|communicat)|can\s*(?:not|'t|t)\s*(program|be\s*program|start|open|close|detect|pair|sync|recogni|communicat|be\s*detect|be\s*recogni)|will\s*not\s*(work|start|program|detect|open|close|function)|won.?t\s*(work|start|program|detect|open|close)|does\s*n.?t\s*(work|start|program|detect|respond|open|close)|소음|진동|누수/;
 if(_SYMPTOM_KW.test(lo)){
-  const natQ=lo.replace(/\b(cuantos?|cuantas?|how\s*many|claims?|garanti|warranty|que|tienen?|tiene|que\s*ver|con|del?|los?|las?|el|la|en|por|usa|u\.?s\.?a|mexi[ck]o|canada|analysis|analisis|ranking|top\s*\d*|show|me|the|for|cl4|nx4m?|bl7m?|o\b|or\b|y\b|and\b)\b/g,'').replace(/\s+/g,' ').trim();
+  // Strip NLP noise + known part names + known filters to isolate symptom description
+  const _partWords=(I.filters.partNM||'').toLowerCase().replace(/[_-]/g,' ').split(/\s+/).filter(w=>w.length>2);
+  const natQ=lo.replace(/\b(cuantos?|cuantas?|how\s*many|of\b|claims?|garanti|warranty|que|tienen?|tiene|que\s*ver|con|del?|los?|las?|el|la|en|por|usa|u\.?s\.?a|mexi[ck]o|canada|analysis|analisis|modo\s*de\s*falla|failure\s*mode|ranking|top\s*\d*|show|me|the|for|cl4|nx4m?|bl7m?)\b/g,'').replace(new RegExp('\\b('+_partWords.join('|')+')\\b','gi'),'').replace(/\s+/g,' ').trim();
   if(natQ.length>2){
-    const terms=natQ.split(/\s+(?:o|or|y|and)\s+/).map(t=>t.trim()).filter(t=>t.length>2);
+    const terms=natQ.split(/\s+(?:o\b|or\b|y\b|and\b)\s+/).map(t=>t.trim()).filter(t=>t.length>2);
     I.filters._natSearch=terms.length?terms:[natQ];
   }
 }
@@ -882,8 +884,9 @@ if(!I.filters._natSearch)for(const[cat,cfg]of Object.entries(SYS_CAT)){
 }
 // Don't add system category when an explicit part is already set — it's redundant and can cause false negatives
 if(I.filters.partNM&&I.filters._sysCategory)delete I.filters._sysCategory;
-// When searching by symptom, default to groupBy natName to show failure mode breakdown with %
+// When searching by symptom, default to groupBy natName and route to analysis for detailed view
 if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
+if(I.filters._natSearch&&(I.filters.partNM||I.filters._sysCategory||I.filters._hvac))I.type='analysis';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -1508,6 +1511,62 @@ function autoMarketMap(I, data){
   return'';
 }
 
+// ===== COMMENT-BASED FAILURE DESCRIPTION EXTRACTION =====
+function commentFailureSummary(data){
+  const withCom=data.filter(r=>r.comment&&r.comment.length>15);
+  if(withCom.length<2)return'';
+  // Extract key phrases from comments using pattern matching
+  const phrases={};
+  const _stripRx=/^\[?[CT]\]?\s*|^description\s*:?\s*|^code\s*de\s*travail\b.*?\/\s*/i;
+  const _splitRx=/[.;!]\s+|\n/;
+  for(const r of withCom){
+    const raw=(r.comment||'').replace(_stripRx,'').trim();
+    // Split into sentences and take most descriptive one
+    const sents=raw.split(_splitRx).map(s=>s.trim()).filter(s=>s.length>10&&s.length<200);
+    for(const s of sents){
+      // Normalize: lowercase, collapse whitespace, remove trailing punctuation
+      const norm=s.toLowerCase().replace(/\s+/g,' ').replace(/[."']+$/,'').trim();
+      if(norm.length<10)continue;
+      // Group similar phrases: check if this is substring/superstring of existing
+      let merged=false;
+      for(const pk in phrases){
+        if(pk.includes(norm)||norm.includes(pk)){
+          // Keep the shorter (more general) key
+          const keepKey=pk.length<=norm.length?pk:norm;
+          const dropKey=pk.length<=norm.length?norm:pk;
+          if(keepKey!==pk){phrases[keepKey]={count:phrases[pk].count+1,samples:phrases[pk].samples};delete phrases[pk];}
+          else{phrases[pk].count++;}
+          merged=true;break;
+        }
+        // Fuzzy: >60% word overlap
+        const w1=new Set(pk.split(/\s+/));const w2=new Set(norm.split(/\s+/));
+        const inter=[...w1].filter(w=>w2.has(w)&&w.length>3).length;
+        const minW=Math.min(w1.size,w2.size);
+        if(minW>=3&&inter/minW>=0.6){
+          phrases[pk].count++;
+          if(phrases[pk].samples.length<2)phrases[pk].samples.push(s);
+          merged=true;break;
+        }
+      }
+      if(!merged)phrases[norm]={count:1,samples:[s]};
+    }
+  }
+  // Sort by frequency and show top entries
+  const top=Object.entries(phrases).sort((a,b)=>b[1].count-a[1].count).filter(([,v])=>v.count>=1).slice(0,8);
+  if(!top.length)return'';
+  const mx=top[0][1].count;const tot=withCom.length;
+  let h=`<div class="cb"><div class="ct">Failure Descriptions from Comments / Descripciones de Falla</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Parsed from ${fN(tot)} dealer comments</div>`;
+  top.forEach(([desc,v],i)=>{
+    const p=mx>0?(v.count/mx*100):0;
+    const pct=tot>0?(v.count/tot*100).toFixed(1)+'%':'';
+    const sample=v.samples[0]||desc;
+    h+=`<div class="br"><span class="bl" title="${esc(sample)}" style="max-width:200px">${i+1}. ${esc(tr(desc,45))}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[(i+3)%C.length]}"></div></div><span class="bv">${v.count}</span><span class="bp">${pct}</span></div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
 // ===== RESPONSE GENERATORS =====
 function genRanking(I){
   const data=flt(gDS(),I.filters);
@@ -1521,6 +1580,24 @@ function genRanking(I){
   else if(I.viz==='treemap')h+=mkTreemap(items,mL);
   else{h+=mkBar(items,I.metric,mL,data);if(items.length>=8)h+=mkPareto(items,'Pareto');}
   h+=mkTbl(items,[{l:I.groupBy,k:'key',f:v=>esc(tr(v,35))},{l:'Claims',k:'count',f:v=>fN(v)},{l:'Total Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)},{l:'Avg Mileage',k:'avgM',f:v=>fN(v)+' km'}]);
+  // When symptom search is active, show matching dealer comments as evidence
+  if(I.filters._natSearch){
+    const terms=I.filters._natSearch;
+    const matchComments=data.filter(r=>r.comment&&r.comment.length>15).filter(r=>{
+      const c=r.comment.toLowerCase();return terms.some(t=>c.includes(t));
+    }).slice(0,6);
+    if(matchComments.length){
+      h+=`<div class="cb"><div class="ct">Matching Dealer Comments / Comentarios Coincidentes</div>`;
+      h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Comments matching: "${terms.join('" or "')}"</div>`;
+      matchComments.forEach(r=>{
+        // Highlight matching terms in comment
+        let ct=esc(tr(r.comment,200));
+        for(const t of terms){ct=ct.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--ac);color:var(--bg);padding:0 2px;border-radius:2px">$1</mark>');}
+        h+=`<div style="background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${ct}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+      });
+      h+='</div>';
+    }
+  }
   h+=autoMarketMap(I,data);
   _vizData=data;_vizFilters=I.filters;_vizGroupBy=I.groupBy;_vizMetric=I.metric;
   h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more charts, switch grouping/metric:</p>`;
@@ -1540,6 +1617,25 @@ function genAnalysis(I){
   let h=`<p><b>${esc(pn)} — Detailed Analysis</b> | ${dsl()}</p>`;
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--gn)'],['Avg Use Period',fN(au,1)+' mo','var(--pu)']]);
   h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Failure Modes / Modos de Falla');
+  // Failure descriptions extracted from dealer comments
+  h+=commentFailureSummary(data);
+  // When symptom search is active, show matching comments with highlighted terms
+  if(I.filters._natSearch){
+    const terms=I.filters._natSearch;
+    const matchComments=data.filter(r=>r.comment&&r.comment.length>15).filter(r=>{
+      const c=r.comment.toLowerCase();return terms.some(t=>c.includes(t));
+    }).slice(0,8);
+    if(matchComments.length){
+      h+=`<div class="cb"><div class="ct">Matching Comments / Comentarios que Coinciden</div>`;
+      h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">${fN(matchComments.length)} comments matching: "${terms.join('" or "')}"</div>`;
+      matchComments.forEach(r=>{
+        let ct=esc(tr(r.comment,250));
+        for(const t of terms){ct=ct.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--ac);color:var(--bg);padding:0 2px;border-radius:2px">$1</mark>');}
+        h+=`<div style="background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${ct}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+      });
+      h+='</div>';
+    }
+  }
   // Show DTC / Cause Codes if available
   const dtcData=data.filter(r=>r.causeCode&&r.causeCode!=='ZZ2'&&r.causeCode!=='ZZ7');
   const byDTC=ag(dtcData.length>0?dtcData:data,'causeCode','count').filter(d=>d.key).slice(0,8);
@@ -1555,8 +1651,20 @@ function genAnalysis(I){
   if(data.length>5&&data[0].mileage!==undefined)h+=mkScatter(data,'Mileage vs Cost');
   const byD=ag(data,'devName','count').slice(0,5);
   if(byD.length)h+=`<p style="margin-top:8px"><b>Suppliers:</b> ${byD.map(d=>esc(tr(d.key,30))+' ('+d.count+')').join(' · ')}</p>`;
-  const wc=data.filter(r=>r.comment&&r.comment.length>20).slice(0,3);
-  if(wc.length){h+='<p style="margin-top:10px"><b>Dealer Comments:</b></p>';wc.forEach(r=>h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r.comment,150))}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`);}
+  // Show diverse sample dealer comments — pick from different nations/natNames for variety
+  const wc=data.filter(r=>r.comment&&r.comment.length>20);
+  if(wc.length){
+    const seen=new Set();const diverse=[];
+    for(const r of wc){
+      const k=(r.nation||'')+'|'+(r.natName||'').slice(0,15);
+      if(!seen.has(k)){seen.add(k);diverse.push(r);}
+      if(diverse.length>=5)break;
+    }
+    // Fill remaining with unique comments if less than 5
+    if(diverse.length<5)for(const r of wc){if(!diverse.includes(r)){diverse.push(r);if(diverse.length>=5)break;}}
+    h+='<p style="margin-top:10px"><b>Dealer Comments:</b></p>';
+    diverse.forEach(r=>h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r.comment,150))}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`);
+  }
   h+=autoMarketMap(I,data);
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
 }
