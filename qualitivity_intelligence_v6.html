@@ -742,10 +742,11 @@ function mkParseBar(I,dataLen){
   if(I.groupBy)tags.push(`<span class="pt" data-tip="Grouped by ${I.groupBy} field">by ${I.groupBy}</span>`);
   if(I.metric!=='count')tags.push(`<span class="pt" data-tip="Sorting/measuring by ${I.metric}">${I.metric}</span>`);
   for(const[k,v]of Object.entries(I.filters||{})){
-    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months')continue;
+    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months'&&k!=='_natSearch')continue;
     if(k==='_sysCategory')tags.push(`<span class="pt pf" data-tip="Smart category filter: ${v}">${v}</span>`);
     else if(k==='_hvac')tags.push(`<span class="pt pf" data-tip="Heating, ventilation & air conditioning filter">HVAC</span>`);
     else if(k==='_months')tags.push(`<span class="pt pf" data-tip="Temporal filter: specific months">${Array.isArray(v)?v.length+' months':v}</span>`);
+    else if(k==='_natSearch')tags.push(`<span class="pt pf" data-tip="Searching failure modes/comments for: ${v.join(', ')}">symptom: ${v.join(' | ')}</span>`);
     else if(k.startsWith('!')){tags.push(`<span class="pt" style="color:var(--rd)" data-tip="Excluding this value">NOT ${k.slice(1)}=${Array.isArray(v)?v.join(','):v}</span>`);}
     else tags.push(`<span class="pt pf" data-tip="Filter: ${k}">${k}=${Array.isArray(v)?v.join(' | '):v}</span>`);
   }
@@ -794,6 +795,7 @@ if(I.type==='unknown'){
   else if(/state|estado/.test(lo)&&/claim|garanti|reclam/.test(lo))I.type='map';
   else{I.type='ranking';if(!I.groupBy)I.groupBy='partNM';}
 }
+// Symptom search detected later will override groupBy if not set — handled after _natSearch detection
 // Filters — Level 5A: compound nation detection (OR logic)
 const _negation=/\b(except|excepto|sin|without|excluding|excluy)\s+/i.test(lo);
 const _negWord=lo.match(/\b(?:except|excepto|sin|without|excluding|excluy)\s+(\S+)/i);
@@ -852,8 +854,17 @@ else if(/wiring.*main|arnes.*main|배선/.test(lo))I.filters.partNM='WIRING ASSY
 else if(/ac\s|a\/c|hvac|air\s*cond|aire\s*acond|cooling\b|enfri|not\s*cool|no\s*enfr|clima/.test(lo)){
   I.filters._hvac=true;
 }
-// Level 2: Fuzzy part matching — only if no hardcoded match
-if(!I.filters.partNM&&!I.filters._hvac&&_IDX){
+// Failure mode / symptom text search — detect symptom keywords in query
+const _SYMPTOM_KW=/noise|ruido|crack|pop\b|vibra|leak|fuga|squeak|rechinido|inoper|short|corto|malfunc|rattle|traqueteo|loose|floj|stuck|atorad|overheat|sobreca|no\s*(funciona|enciende|arranca|enfr[ií]a|program|responde|abre|cierra|trabaja|prende|sirve|jala)|not\s*(work|start|cool|open|clos|respond|function)|can.?t\s*(program|start|open|close)|소음|진동|누수/;
+if(_SYMPTOM_KW.test(lo)){
+  const natQ=lo.replace(/\b(cuantos?|cuantas?|how\s*many|claims?|garanti|warranty|que|tienen?|tiene|que\s*ver|con|del?|los?|las?|el|la|en|por|usa|u\.?s\.?a|mexi[ck]o|canada|analysis|analisis|ranking|top\s*\d*|show|me|the|for|cl4|nx4m?|bl7m?|o\b|or\b|y\b|and\b)\b/g,'').replace(/\s+/g,' ').trim();
+  if(natQ.length>2){
+    const terms=natQ.split(/\s+(?:o|or|y|and)\s+/).map(t=>t.trim()).filter(t=>t.length>2);
+    I.filters._natSearch=terms.length?terms:[natQ];
+  }
+}
+// Level 2: Fuzzy part matching — only if no hardcoded match and no symptom search
+if(!I.filters.partNM&&!I.filters._hvac&&!I.filters._natSearch&&_IDX){
   // Strip common NLP words to get potential part name fragment
   const partQ=lo.replace(/\b(top|ranking|analysis|trend|map|by|cost|show|me|the|in|for|with|usa|mexico|canada|claims?|parts?|por|de|los|las|del|en|con|que|mas|el|la|un|una)\b/g,'').trim();
   if(partQ.length>3){
@@ -862,13 +873,17 @@ if(!I.filters.partNM&&!I.filters._hvac&&_IDX){
   }
 }
 if(/safety|seguridad|안전/.test(lo))I.filters.safety='Y';
-// Smart system category detection
-for(const[cat,cfg]of Object.entries(SYS_CAT)){
+// Smart system category detection — skip when searching by symptom text
+if(!I.filters._natSearch)for(const[cat,cfg]of Object.entries(SYS_CAT)){
   if(cfg.kw.test(lo)){
     I.filters._sysCategory=cat;
     break;
   }
 }
+// Don't add system category when an explicit part is already set — it's redundant and can cause false negatives
+if(I.filters.partNM&&I.filters._sysCategory)delete I.filters._sysCategory;
+// When searching by symptom, default to groupBy natName to show failure mode breakdown with %
+if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -914,6 +929,13 @@ function flt(data,filters){
         // Level 5B: temporal month filter (array of YYYY-MM)
         if(Array.isArray(v)&&!v.includes(r.confMonth))return false;
       }
+      else if(k==='_natSearch'){
+        // Failure mode / symptom text search — match any term in natName or comment
+        const nat=(r.natName||'').toLowerCase();
+        const com=(r.comment||'').toLowerCase();
+        const matched=v.some(term=>nat.includes(term)||com.includes(term));
+        if(!matched)return false;
+      }
       else if(k==='partNM'){if(!r.partNM||!r.partNM.toUpperCase().includes(v.toUpperCase()))return false;}
       else if(k.startsWith('!')){
         // Level 5A: negation filter
@@ -946,7 +968,7 @@ function ag(data,gBy,metric){
   return Object.entries(g).map(([key,v])=>({key,value:v[vk],...v})).sort((a,b)=>b.value-a.value);
 }
 
-function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')).map(([k,v])=>`${k}=${v}`).join(', ');}
+function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')||k==='_natSearch').map(([k,v])=>k==='_natSearch'?`symptom=${v.join('|')}`:`${k}=${v}`).join(', ');}
 function dsl(){return aDS==='all'?'All':'Sheet '+aDS;}
 
 // ===== VIZ BUILDERS =====
