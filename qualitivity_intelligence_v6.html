@@ -519,24 +519,176 @@ const SYS_CAT={
 };
 
 // ===== CUSTOMER FAILURE MODE TAXONOMY =====
-const FAILURE_MODES=[
-  {id:'inoperable',label:'Inoperable / No Function',labelES:'Inoperable / Sin Función',
-   rx:/\b(inoper|not\s*work|no\s*(funciona|enciende|arranca|prende|sirve|responde|detecta|abre|cierra|programa|comunica|sincroniza)|won.?t\s*(start|work|open|close|program|detect)|does\s*n.?t\s*(work|start|function|respond|detect|open|close|program)|can.?t\s*(start|program|be\s*program|detect|open|close)|will\s*not\s*(work|start|program|detect|open|close)|dead|failed|unresponsive|disabled|no\s*power|sin\s*(corriente|energ|funci[oó]n)|ne\s*(fonctionne|d[ée]marre|s.?ouvre|r[ée]pond)\s*pas|ceased|n.?a\s*pas\s*(d[ée]marr|fonctionn)|v[ée]hicule\s*ne\s*(part|d[ée]marr))\b/i},
-  {id:'intermittent',label:'Intermittent / Erratic',labelES:'Intermitente / Errático',
-   rx:/\b(intermit|erratic|sporadic|random|sometimes|a\s*veces|de\s*(vez\s*en\s*cuando|repente)|occasional|comes\s*and\s*goes|va\s*y\s*viene|par\s*moments?|parfois|at\s*times)\b/i},
-  {id:'noise',label:'Noise / Vibration',labelES:'Ruido / Vibración',
-   rx:/\b(noise|ruido|vibra[tc]|squeal|rattle|knock|golpe|crujido|grinding|squeak|rechinido|clunk|bang|hum|buzz|whine|click|bruit|cognement|grince|traquete|abnormal\s*sound|sonido)\b/i},
-  {id:'physical',label:'Physical Damage / Defect',labelES:'Daño Físico / Defecto',
-   rx:/\b(broken|roto|crack|damaged|da[ñn]o|desgast|loose|suelto|floj|bent|dent|scratch|raya|torn|ripped|missing|faltante|detach|desprend|peeling|warp|deform|corrosi|corros|rust|oxid|bris[ée]|cass[ée]|endommag)\b/i},
-  {id:'performance',label:'Performance Degradation',labelES:'Degradación de Rendimiento',
-   rx:/\b(slow|lento|weak|d[ée]bil|poor|hard\s*to|difficult|dif[ií]cil|soft\s*(pedal|brake)|pulls?\s*(left|right|to)|delayed|lag|sluggish|reduced|low\s*(pressure|power)|rough|harsh|stiff|pesad|drag|jalonea|se\s*ahoga|faible|dur\s*[àa])\b/i},
-  {id:'warning',label:'Warning / Alert / DTC',labelES:'Alerta / Testigo / DTC',
-   rx:/\b(warning|light\s*on|testigo|check\s*engine|alert|alerta|message|mensaje|indicator|dash(board)?\s*(light|message|warning)|DTC|MIL|luz\s*(encendid|prendid)|voyant|t[ée]moin|engine\s*light)\b/i},
-  {id:'leak',label:'Leak / Fluid / Contamination',labelES:'Fuga / Fluido / Contaminación',
-   rx:/\b(leak|fuga|fluid|fluido|oil\b|aceite|wet\b|moisture|humid|water|agua|coolant|refrigerante|seep|drip|gotea|stain|mancha|fuite|huile)\b/i}
+// ===== 2-LEVEL CUSTOMER FAILURE MODE (CFM) CLASSIFIER =====
+const CFM_CATS=[
+  {id:'not_starting',label:'Not Starting',labelES:'No Arranca',
+   subs:[
+     {id:'no_crank',label:'No Crank / Dead',
+      rx:/won.?t\s*(start|turn\s*on)|will\s*not\s*(start|turn)|no\s*(start|crank|arranca|enciende|prende)|does\s*n.?t\s*(start|turn\s*on)|doesn.?t\s*start|ne\s*(d[ée]marre|part)\s*pas|v[ée]hicule\s*ne\s*(part|d[ée]marr)|not\s*start|can.?t\s*start|\bno\s*power\b|sin\s*(corriente|energ)|no\s*enciende/i},
+     {id:'dead_battery',label:'Dead Battery / Jump',
+      rx:/dead\s*battery|jump\s*start|jumpe?d|boost(er|é)?|survolté?|had\s*to\s*be\s*jump|needs?\s*to\s*be\s*jump|faire\s*boost|low\s*volt|battery\s*(dead|drained|low)|bater[ií]a?\s*(baja|muerta|descargad)|voltage\s*low/i},
+     {id:'stall_dies',label:'Stalls / Dies',
+      rx:/\b(stall|se\s*apag[oa]|shut\s*(off|down)|dies\b|cuts?\s*out|se\s*muri[oó]|shuts?\s*off|turns?\s*off)/i}
+   ]},
+  {id:'warning_light',label:'Warning Light',labelES:'Testigo Encendido',
+   subs:[
+     {id:'check_engine',label:'Check Engine / CEL',
+      rx:/\b(check\s*engine|engine\s*light|CEL\b|MIL\b|luz\s*d?el?\s*motor|testigo\s*d?el?\s*motor|check\s*motor|engine\s*warning)\b/i},
+     {id:'airbag_warning',label:'Airbag / SRS',
+      rx:/\b(airbag|air\s*bag|SRS)\s*(light|warn|alert|testigo|luz|on|lamp|came|appeared)/i},
+     {id:'brake_warning',label:'Brake Light',
+      rx:/\b(brake|freno)\s*(light|warn|alert|testigo|luz|indicator|lamp)/i},
+     {id:'tpms_warning',label:'TPMS Alert',
+      rx:/\b(tpms|tire\s*pressure)\s*(light|warn|alert|flash|on|allum)/i},
+     {id:'abs_warning',label:'ABS Light',
+      rx:/\b(abs|epb|tcs)\s*(light|warn|alert|testigo|luz|on|lamp|came)/i},
+     {id:'other_warning',label:'Other Warning',
+      rx:/warning|light\s*on|lights?\s*(came|all|appear|flash|on)|testigo|alert[ae]?|indicator|dash(board)?\s*(light|message|warning)|DTC\b|luz\s*(encendid|prendid)|voyant|t[ée]moin|message\s*(on|appear)|notification|check\s*haptic/i}
+   ]},
+  {id:'not_working',label:'Not Working',labelES:'No Funciona',
+   subs:[
+     {id:'inoperative',label:'Inoperative',
+      rx:/not\s*work|does\s*n.?t\s*work|no\s*(funciona|sirve|responde)|ne\s*fonctionne\s*pas|stopped?\s*work|inoper|unresponsive|failed\b|ceased|won.?t\s*work|will\s*not\s*work|disabled|stop\s*work|are\s*inop/i},
+     {id:'wont_open',label:'Won\'t Open',
+      rx:/\b(won.?t\s*open|will\s*not\s*open|not\s*open|no\s*abre|does\s*n.?t\s*open|ouvre\s*pas|tiens?\s*pas|can.?t\s*open|no\s*se\s*abre)\b/i},
+     {id:'wont_close',label:'Won\'t Close',
+      rx:/\b(won.?t\s*close|will\s*not\s*close|not\s*clos|no\s*cierra|does\s*n.?t\s*close|no\s*se\s*cierra)\b/i},
+     {id:'horn_inop',label:'Horn Inop',
+      rx:/\b(horn|claxon|pito|klaxon)\s*(inop|not|no\s*(suena|funciona)|does\s*n|won)|electric\s*horn\s*inop/i},
+     {id:'wiper_inop',label:'Wiper Inop',
+      rx:/\b(wiper|limpiaparabrisas|essuie)\s*(inop|not|no|won|does\s*n)/i},
+     {id:'blower_inop',label:'Blower / Fan Inop',
+      rx:/blower\s*(stop|inop|not|no|won|will\s*not|does|quit)|ventilador\s*(no|se\s*par)|fan\s*(stop|inop|not|quit)/i}
+   ]},
+  {id:'noise_vibration',label:'Noise / Vibration',labelES:'Ruido / Vibración',
+   subs:[
+     {id:'rattle_clunk',label:'Rattle / Clunk',
+      rx:/\b(rattle|clunk|traquete|cascabel|tronido|bang|golpe|golpeteo|cognement)\b/i},
+     {id:'squeak_grind',label:'Squeak / Grinding',
+      rx:/\b(squeak|squeal|rechinido|grince|chirp|grinding|grind)\b/i},
+     {id:'knock',label:'Knock / Tap',
+      rx:/\b(knock|tap|golpeteo\s*met[aá]l|toc|tictac)\b/i},
+     {id:'buzz_hum',label:'Buzz / Hum / Vibration',
+      rx:/\b(buzz|hum(m)?|vibra[tc]|zumbido)\b/i},
+     {id:'general_noise',label:'General Noise',
+      rx:/\b(noise|ruido|bruit|sonido|abnormal\s*sound|sound|se\s*escucha)\b/i}
+   ]},
+  {id:'fluid_leak',label:'Fluid Leak',labelES:'Fuga de Fluido',
+   subs:[
+     {id:'water_leak',label:'Water Ingress',
+      rx:/water\s*(leak|entry|intrusion|coming\s*in)|filtra(ci[oó]n)?\s*(de\s*)?agua|moisture|humid(ad|ity)|wet\s*(floor|carpet|inside)|fuite\s*d.?eau|entra\s*agua|llena\s*de\s*humedad/i},
+     {id:'oil_leak',label:'Oil Leak',
+      rx:/\b(oil\s*leak|fuga\s*(de\s*)?aceite|aceite\s*fuga|fuite\s*d.?huile|leaking\s*oil|huile)\b/i},
+     {id:'coolant_leak',label:'Coolant Leak',
+      rx:/\b(coolant\s*leak|refrigerante|antifreeze|antigel)\b/i},
+     {id:'other_leak',label:'Other Leak / Fluid',
+      rx:/\b(leak|fuga|fuite|seep|drip|gotea|fluid|fluido)\b/i}
+   ]},
+  {id:'physical_damage',label:'Physical Damage',labelES:'Daño Físico',
+   subs:[
+     {id:'broken_crack',label:'Broken / Cracked',
+      rx:/\b(broken|roto|crack|craque|bris[ée]|cass[ée]|snap|fractur)\b/i},
+     {id:'loose_detach',label:'Loose / Falling Off',
+      rx:/\b(loose|suelto|floj|falling\s*off|coming\s*(off|apart)|desprend|detach|se\s*cay[oó]|came\s*off)\b/i},
+     {id:'peeling_cosmetic',label:'Peeling / Cosmetic',
+      rx:/\b(peeling|peel|desgast|stitch|costura|stitching|paint|pintura|emblem|emblema|deform|bosseler|tache|stain|mancha|chip|descarapel)\b/i},
+     {id:'scratch_dent',label:'Scratch / Dent',
+      rx:/\b(scratch|raya|dent|rayado|abollad)\b/i},
+     {id:'rust',label:'Rust / Corrosion',
+      rx:/\b(rust|oxid|corrosi|corros)\b/i},
+     {id:'missing_part',label:'Missing Part',
+      rx:/\b(missing|faltante|fell\s*off)\b/i}
+   ]},
+  {id:'performance',label:'Performance Issue',labelES:'Problema de Rendimiento',
+   subs:[
+     {id:'pulling_drift',label:'Pulling / Drift',
+      rx:/pull(s|ing)?\s*(left|right|to\s*(the\s*)?(left|right))|drift|jala|tira\s*(a|para|hacia)|d[ée]salign|wobble|wander|wonder/i},
+     {id:'vibration_shake',label:'Shaking / Shimmy',
+      rx:/\b(shak(e|ing|y)|shimmy|vibration\s*at\s*(highway|high\s*speed))\b/i},
+     {id:'brake_hard',label:'Hard Brake Pedal',
+      rx:/\b(hard\s*(brake|pedal|to\s*brake|to\s*stop)|brake\s*pedal\s*(hard|stiff)|pedal\s*(duro|pesad))\b/i},
+     {id:'brake_soft',label:'Soft / Spongy Brake',
+      rx:/soft\s*(pedal|brake)|spongy|low\s*brake|\bno\s*brake|sin\s*freno|freno\s*suave|pedal\s*(de\s*freno\s*)?(muy\s*)?(bajo|suave)/i},
+     {id:'rough_idle',label:'Rough Idle / Surge',
+      rx:/\b(rough\s*idle|idle\s*(high|low|rough|fluctuat)|rpm\s*(high|up|unstable|fluctuat)|idle|ralent[ií]|surge|hesitat|revoluciones\s*(sub|baj|inestab)|se\s*ahoga)\b/i},
+     {id:'sluggish',label:'Sluggish / Weak',
+      rx:/\bslow\b|lento|weak|d[ée]bil|sluggish|reduced|lag\b|poor\s*(performance|acceleration)|faible|lack\s*(of\s*)?power|low\s*power|pas\s*bien/i},
+     {id:'trans_shift',label:'Shift / Jerk',
+      rx:/\b(shift|jerk|jalonea|tironea|gear|hard\s*to\s*shift|stuck\s*in\s*(gear|park|drive)|transmis|cvt|engranaje|levier\s*de\s*vitesse|bump)\b/i}
+   ]},
+  {id:'ac_climate',label:'A/C & Climate',labelES:'Clima / A/C',
+   subs:[
+     {id:'no_cooling',label:'No Cooling',
+      rx:/\ba\/?c\b|air\s*cond|aire\s*acond|no\s*enfr[ií]|not\s*cool|no\s*cool|not\s*blowing\s*cold|no\s*cold|no\s*fr[ií]o/i},
+     {id:'no_heating',label:'No Heating',
+      rx:/\b(no\s*calien|heat\s*(not|does\s*n|won)|no\s*heat|calefac\s*(no|not)|not\s*blowing\s*hot|chauffage\s*ne)\b/i},
+     {id:'smoke_odor',label:'Smoke / Odor',
+      rx:/\b(smoke|humo|olor|odor|smell|fum[ée]e|quem[aá]|burning\s*smell)\b/i}
+   ]},
+  {id:'electrical',label:'Electrical',labelES:'Eléctrico',
+   subs:[
+     {id:'battery_charging',label:'Battery / Charging',
+      rx:/\b(charg(e|ing|er|dock)?|battery|bater[ií]a|batterie|volt|12v|recharge|no\s*charg)\b/i},
+     {id:'light_out',label:'Light Out / Lamp',
+      rx:/\b(light\s*(is\s*)?(out|off|burn)|bulb|foco|led\s*out|tail\s*light|head\s*light|lamp|faro|no\s*ilumina|luz\s*no\s*(funciona|enciende)|turn\s*signal|lumiè|out\s*(in|on)\s*(driver|passenger|rear|front))\b/i},
+     {id:'wiring_short',label:'Wiring / Short',
+      rx:/\b(electr|short\s*circuit|corto\s*circuito|wiring|cablead|fus[ie]b?le|fuse)\b/i},
+     {id:'sensor_issue',label:'Sensor Issue',
+      rx:/\b(sensor|detect|proximi|no\s*detect|can.?t\s*detect|won.?t\s*detect)\b/i}
+   ]},
+  {id:'infotainment',label:'Infotainment',labelES:'Infotainment',
+   subs:[
+     {id:'screen_display',label:'Screen / Display',
+      rx:/\b(screen|display|monitor|pantalla|infotainment|cluster|tableau|black\s*screen|blank|freeze|frozen|tablero|cadran|no\s*signal|pop\s*up|touch\s*screen|negro|noir)\b/i},
+     {id:'camera_issue',label:'Camera Issue',
+      rx:/\b(camera|c[aá]mara|rear\s*view|backup\s*cam|reverse\s*cam|green\s*screen|blurry|borrosa|fuzzy)\b/i},
+     {id:'speaker_audio',label:'Speaker / Audio',
+      rx:/\b(speaker|sound|audio|radio|bocina|altavoz|no\s*sound|blown|distort|haut.?parleur|parlant|crackle)\b/i},
+     {id:'connectivity',label:'Connectivity / App',
+      rx:/\b(bluetooth|usb|carplay|android\s*auto|kia\s*connect|blue\s*link|modem|app|remote\s*start|connect|wireless|wifi|telemati|telematic)\b/i}
+   ]},
+  {id:'body_access',label:'Body & Access',labelES:'Carrocería y Acceso',
+   subs:[
+     {id:'door_window',label:'Door / Window',
+      rx:/\b(door|puerta|porte|window|ventana|vitre|vidrio|cristal|doesn.?t\s*latch|no\s*cierra\s*bien|flush)\b/i},
+     {id:'trunk_hatch',label:'Trunk / Hatch',
+      rx:/\b(hatch|cajuela|valise|trunk|liftgate|tailgate|hayon|coffre|lift\s*gate)\b/i},
+     {id:'seat_belt',label:'Seat Belt',
+      rx:/\b(seat\s*belt|cintur[oó]n|buckle|retract|ceinture|belt\s*(not|does|won|no))\b/i},
+     {id:'key_fob',label:'Key Fob / Lock',
+      rx:/\b(key\s*fob|smart\s*key|llave|remote|fob|proximity|locking|unlock|keyfob|control\s*remoto|locked\s*out|can.?t\s*(lock|unlock)|program)\b/i},
+     {id:'mirror_issue',label:'Mirror',
+      rx:/\b(mirror|espejo|retrovisor|r[ée]troviseur)\b/i},
+     {id:'seat_issue',label:'Seat Problem',
+      rx:/\b(seat\s*(not|inop|stuck|won|does|broken|heat)|asiento|si[eè]ge|lumbar|heated\s*seat)\b/i},
+     {id:'windshield',label:'Windshield / Glass',
+      rx:/\b(windshield|parabrisas|pare.?brise|glass|molding|moldura|seal|weather\s*strip|wind\s*noise)\b/i}
+   ]},
+  {id:'intermittent',label:'Intermittent',labelES:'Intermitente',
+   subs:[
+     {id:'comes_goes',label:'Comes and Goes',
+      rx:/\b(intermit|sometimes|occasional|comes\s*and\s*goes|a\s*veces|sporadic|random|par\s*(intermit|moment)|parfois|1\s*fois\s*sur)\b/i}
+   ]},
+  {id:'pdi_delivery',label:'PDI / Delivery',labelES:'PDI / Entrega',
+   subs:[
+     {id:'pdi_issue',label:'PDI Finding',
+      rx:/\b(pdi|pre.?delivery|pre.?entrega|inspection\s*report|during\s*pdi|upon\s*delivery)\b/i},
+     {id:'delivery_damage',label:'Delivery Damage',
+      rx:/\b(delivery|transport|entrega|transit|recib)\b/i}
+   ]}
 ];
+
+// Build lookup and helper functions
+const CFM_CAT_LOOKUP={};const CFM_SUB_LOOKUP={};
+for(const cat of CFM_CATS){CFM_CAT_LOOKUP[cat.id]=cat;for(const sub of cat.subs){CFM_SUB_LOOKUP[sub.id]={cat:cat.id,catLabel:cat.label,...sub};}}
+function cfmLabel(catId){const c=CFM_CAT_LOOKUP[catId];return c?c.label:catId==='other'?'Other / Otro':catId;}
+function cfmSubLabel(subId){const s=CFM_SUB_LOOKUP[subId];return s?s.label:subId;}
+function cfmFullLabel(catId,subId){return cfmLabel(catId)+(subId&&subId!==catId?' → '+cfmSubLabel(subId):'');}
+
+// Legacy compatibility
+const FAILURE_MODES=CFM_CATS.map(c=>({id:c.id,label:c.label,labelES:c.labelES,rx:new RegExp(c.subs.map(s=>s.rx.source).join('|'),'i')}));
 const FM_LOOKUP=Object.fromEntries(FAILURE_MODES.map(f=>[f.id,f]));
-function fmLabel(id){const f=FM_LOOKUP[id];return f?f.label:id==='other'?'Other / Otro':id;}
+function fmLabel(id){return cfmLabel(id);}
 
 // ===== GLOBALS =====
 let D={'3M':[],'DC':[],'12M':[]};
@@ -763,12 +915,13 @@ function mkParseBar(I,dataLen){
   if(I.groupBy)tags.push(`<span class="pt" data-tip="Grouped by ${I.groupBy} field">by ${I.groupBy}</span>`);
   if(I.metric!=='count')tags.push(`<span class="pt" data-tip="Sorting/measuring by ${I.metric}">${I.metric}</span>`);
   for(const[k,v]of Object.entries(I.filters||{})){
-    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months'&&k!=='_natSearch'&&k!=='_failureMode')continue;
+    if(k.startsWith('_')&&k!=='_sysCategory'&&k!=='_hvac'&&k!=='_months'&&k!=='_natSearch'&&k!=='_failureMode'&&k!=='_failureSub')continue;
     if(k==='_sysCategory')tags.push(`<span class="pt pf" data-tip="Smart category filter: ${v}">${v}</span>`);
     else if(k==='_hvac')tags.push(`<span class="pt pf" data-tip="Heating, ventilation & air conditioning filter">HVAC</span>`);
     else if(k==='_months')tags.push(`<span class="pt pf" data-tip="Temporal filter: specific months">${Array.isArray(v)?v.length+' months':v}</span>`);
     else if(k==='_natSearch')tags.push(`<span class="pt pf" data-tip="Searching failure modes/comments for: ${v.join(', ')}">symptom: ${v.join(' | ')}</span>`);
-    else if(k==='_failureMode')tags.push(`<span class="pt pf" data-tip="Customer failure mode category: ${fmLabel(v)}" style="background:var(--ac);color:var(--bg)">⚡ ${fmLabel(v)}</span>`);
+    else if(k==='_failureMode')tags.push(`<span class="pt pf" data-tip="Customer failure mode category: ${cfmLabel(v)}" style="background:var(--ac);color:var(--bg)">⚡ ${cfmLabel(v)}</span>`);
+    else if(k==='_failureSub')tags.push(`<span class="pt pf" data-tip="Sub-category: ${cfmSubLabel(v)}" style="background:var(--pu);color:#fff">→ ${cfmSubLabel(v)}</span>`);
     else if(k.startsWith('!')){tags.push(`<span class="pt" style="color:var(--rd)" data-tip="Excluding this value">NOT ${k.slice(1)}=${Array.isArray(v)?v.join(','):v}</span>`);}
     else tags.push(`<span class="pt pf" data-tip="Filter: ${k}">${k}=${Array.isArray(v)?v.join(' | '):v}</span>`);
   }
@@ -910,12 +1063,14 @@ if(I.filters.partNM&&I.filters._sysCategory)delete I.filters._sysCategory;
 if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
 if(I.filters._natSearch&&(I.filters.partNM||I.filters._sysCategory||I.filters._hvac))I.type='analysis';
 // Failure mode category filter — detect failure mode keywords and set _failureMode filter
-const _FM_PARSE={inoperable:/\binoper|no\s*(funciona|enciende|arranca)|not\s*work|won.?t\s*start|dead\b|sin\s*funci/i,intermittent:/\bintermit|err[aá]tic|sporadic/i,noise:/\b(noise|ruido|vibra(tion|ci[oó]n))/i,physical:/\b(physical|damage|da[ñn]o|broken|roto|crack|defect)/i,performance:/\b(performance|degradat|rendimiento|slow|weak|hard\s*to|soft\s*pedal)/i,warning:/\b(warning|alert|alerta|testigo|light\s*on|check\s*engine|dtc)\b/i,leak:/\b(leak|fuga|fluid|oil\b|aceite|moisture)/i};
+const _FM_PARSE={not_starting:/\bnot\s*start|no\s*(arranca|enciende|prende)|won.?t\s*start|dead\s*battery|jump\s*start|stall|se\s*apag/i,warning_light:/\bwarning|testigo|check\s*engine|light\s*on|dtc|airbag\s*light|alert|alerta/i,not_working:/\binoper|not\s*work|no\s*funciona|won.?t\s*work|won.?t\s*open|horn\s*inop|wiper|blower/i,noise_vibration:/\b(noise|ruido|vibra(tion|ci[oó]n)|squeak|rattle|knock|clunk|grind|bruit)/i,fluid_leak:/\b(leak|fuga|fluid|oil\b|aceite|moisture|coolant|water\s*leak)/i,physical_damage:/\b(broken|roto|crack|damage|da[ñn]o|loose|scratch|rust|peel|missing)/i,performance:/\b(performance|pull(ing|s)?\s*(left|right)|hard\s*to|soft\s*(pedal|brake)|rough\s*idle|shift|jerk|jalonea|sluggish|weak)/i,ac_climate:/\b(a\/?c|air\s*cond|aire\s*acond|no\s*enfr|not\s*cool|no\s*heat|smoke|humo|olor)/i,electrical:/\b(battery|bater|charg|light\s*out|lamp|faro|wiring|sensor|electr|fuse)/i,infotainment:/\b(screen|display|camera|speaker|audio|radio|bluetooth|infotainment|monitor|pantalla)/i,body_access:/\b(door|puerta|window|ventana|trunk|hatch|cajuela|seat\s*belt|key\s*fob|mirror|espejo|windshield)/i,intermittent:/\bintermit|err[aá]tic|sporadic|comes\s*and\s*goes/i,pdi_delivery:/\bpdi|pre.?delivery/i};
 if(!I.filters._natSearch){for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(lo)){I.filters._failureMode=fmId;break;}}}
+// Subcategory detection — match subcategory labels as query terms
+if(!I.filters._failureSub){for(const sub of Object.values(CFM_SUB_LOOKUP)){const sl=sub.label.toLowerCase().replace(/[^a-z0-9\s]/g,'');if(lo.includes(sl)&&sl.length>4){I.filters._failureSub=sub.id;if(!I.filters._failureMode)I.filters._failureMode=sub.cat;break;}}}
 // Failure mode analysis intent detection
 if(/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|customer\s*(complaint|failure)|queja.*cliente|고장\s*모드|failure\s*mode\s*analysis/i.test(lo))I.type='failuremode';
 // When failure mode filter active with part/system, route to analysis
-if(I.filters._failureMode&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
+if((I.filters._failureMode||I.filters._failureSub)&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -971,6 +1126,9 @@ function flt(data,filters){
       else if(k==='_failureMode'){
         if(r._failureMode!==v)return false;
       }
+      else if(k==='_failureSub'){
+        if(r._failureSub!==v)return false;
+      }
       else if(k==='partNM'){if(!r.partNM||!r.partNM.toUpperCase().includes(v.toUpperCase()))return false;}
       else if(k.startsWith('!')){
         // Level 5A: negation filter
@@ -1001,12 +1159,13 @@ function ag(data,gBy,metric){
   for(const k in g){g[k].avgM=g[k].n>0?g[k].mileage/g[k].n:0;g[k].avgC=g[k].n>0?g[k].cost/g[k].n:0;}
   const vk=metric==='cost'?'cost':metric==='mileage'?'avgM':'count';
   const res=Object.entries(g).map(([key,v])=>({key,value:v[vk],...v})).sort((a,b)=>b.value-a.value);
-  // Remap _failureMode IDs to human-readable labels
-  if(gBy==='_failureMode')res.forEach(r=>{r.key=fmLabel(r.key);});
+  // Remap _failureMode/_failureSub IDs to human-readable labels
+  if(gBy==='_failureMode')res.forEach(r=>{r.key=cfmLabel(r.key);});
+  if(gBy==='_failureSub')res.forEach(r=>{r.key=cfmSubLabel(r.key);});
   return res;
 }
 
-function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')||k==='_natSearch'||k==='_failureMode').map(([k,v])=>k==='_natSearch'?`symptom=${v.join('|')}`:k==='_failureMode'?`mode=${fmLabel(v)}`:`${k}=${v}`).join(', ');}
+function fdsc(f){return Object.entries(f).filter(([k])=>!k.startsWith('_')||k==='_natSearch'||k==='_failureMode'||k==='_failureSub').map(([k,v])=>k==='_natSearch'?`symptom=${v.join('|')}`:k==='_failureMode'?`mode=${cfmLabel(v)}`:k==='_failureSub'?`sub=${cfmSubLabel(v)}`:`${k}=${v}`).join(', ');}
 function dsl(){return aDS==='all'?'All':'Sheet '+aDS;}
 
 // ===== VIZ BUILDERS =====
@@ -1033,7 +1192,7 @@ function mkTbl(items,cols){
 }
 
 function mkHeat(data,rF,cF,title){
-  const _fmMap=k=>(rF==='_failureMode'||cF==='_failureMode')?fmLabel(k):k;
+  const _fmMap=k=>(rF==='_failureMode'||cF==='_failureMode')?cfmLabel(k):(rF==='_failureSub'||cF==='_failureSub')?cfmSubLabel(k):k;
   const rows=[...new Set(data.map(r=>r[rF]))].filter(Boolean).sort();
   const cols=[...new Set(data.map(r=>r[cF]))].filter(Boolean).sort();
   if(!rows.length||!cols.length)return'';
@@ -1159,11 +1318,10 @@ function mkMap(data, title, normalized){
       const ci=Math.min(Math.floor(intensity*10),10);
       const bg=val>0?HC[ci]:'#0a0f18';
       const fg=ci>4?'#fff':'var(--tx3)';
-      const ratio=normalized&&sales>0?(claims/sales*100).toFixed(2)+'%':'';
-      const tip=`${ST_NAMES[stHere]}\nClaims: ${claims}${sales?'\nSales: '+fN(sales):''}${normalized&&sales?'\nRatio: '+(claims/sales*100).toFixed(2)+'%':''}`;
+      const tip=`${ST_NAMES[stHere]}\nClaims: ${claims}${sales?'\nSales: '+fN(sales):''}${sales>0?'\nRatio: '+(claims/sales*1000).toFixed(1)+' per 1K':''}`;
       h+=`<div style="background:${bg};color:${fg};border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;transition:transform .15s;font-family:'JetBrains Mono',monospace;border:1px solid ${ci>2?'transparent':'var(--bd)'}" title="${tip}" onmouseenter="this.style.transform='scale(1.15)';this.style.zIndex='10'" onmouseleave="this.style.transform='scale(1)';this.style.zIndex='0'">
         <div style="font-size:10px;font-weight:700">${stHere}</div>
-        <div style="font-size:${normalized?'8':'9'}px;margin-top:1px">${normalized?(sales>0?(claims/sales*100).toFixed(1)+'%':'-'):claims||''}</div>
+        <div style="font-size:${normalized?'7':'9'}px;margin-top:1px">${normalized?(sales>0?(claims/sales*1000).toFixed(1):'-'):claims||''}</div>
       </div>`;
     } else {
       h+=`<div></div>`;
@@ -1178,12 +1336,12 @@ function mkMap(data, title, normalized){
   const stArr=Object.entries(stValues).filter(([st])=>!normalized||SALES_ST[st]>=10).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(stArr.length){
     h+=`<p style="font-size:11px;color:var(--tx2);margin:10px 0 6px"><b>Top States — ${metricLabel}:</b></p>`;
-    h+='<div class="tw"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio</th></tr></thead><tbody>';
+    h+='<div class="tw"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio (per 1K)</th></tr></thead><tbody>';
     stArr.forEach(([st,val],i)=>{
       const claims=stClaims[st]||0;const sales=SALES_ST[st]||0;
-      const ratio=sales>0?(claims/sales*100).toFixed(2)+'%':'—';
-      const flagColor=sales>0&&claims/sales>.05?'color:var(--rd)':claims/sales>.03?'color:var(--or)':'';
-      h+=`<tr><td>${i+1}</td><td>${ST_NAMES[st]||st}</td><td>${claims}</td><td>${fN(sales)}</td><td style="${flagColor};font-weight:600">${normalized?ratio:claims}</td></tr>`;
+      const ratio=sales>0?(claims/sales*1000).toFixed(1):'—';
+      const r1k=sales>0?claims/sales*1000:0;const flagColor=r1k>50?'color:var(--rd)':r1k>30?'color:var(--or)':'';
+      h+=`<tr><td>${i+1}</td><td>${ST_NAMES[st]||st}</td><td>${claims}</td><td>${fN(sales)}</td><td style="${flagColor};font-weight:600">${ratio}</td></tr>`;
     });
     h+='</tbody></table></div>';
   }
@@ -1231,12 +1389,12 @@ function mkRealMap(data, title, normalized, overlayVar, overlayLabel, monthIdx){
   // Table
   const stArr=Object.entries(stVals).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(stArr.length){
-    h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio</th>';
+    h+='<div class="tw" style="margin-top:10px"><table><thead><tr><th>#</th><th>State</th><th>Claims</th><th>Sales</th><th>Ratio (per 1K)</th>';
     if(overlayVar)h+=`<th>${esc(overlayLabel||overlayVar)}</th>`;
     h+='</tr></thead><tbody>';
     stArr.forEach(([st,val],i)=>{
       const cl=stClaims[st]||0;const sl=SALES_ST[st]||0;
-      const ratio=sl>0?(cl/sl*100).toFixed(2)+'%':'—';
+      const ratio=sl>0?(cl/sl*1000).toFixed(1):'—';
       let ovVal='';
       if(overlayVar){
         if(monthIdx!==undefined&&US_MONTHLY_TEMP&&US_MONTHLY_TEMP[st])
@@ -1278,7 +1436,7 @@ function mkRealMap(data, title, normalized, overlayVar, overlayLabel, monthIdx){
         d3.select(this).attr('stroke','#fff').attr('stroke-width',1.5);
         const st=FIPS[parseInt(d.id)];if(!st)return;
         const cl=stClaims[st]||0;const sl=SALES_ST[st]||0;
-        const ratio=sl>0?(cl/sl*100).toFixed(2)+'%':'—';
+        const ratio=sl>0?(cl/sl*1000).toFixed(1)+' per 1K':'—';
         let tipHtml=`<b>${ST_NAMES[st]}</b><br>Claims: ${cl}<br>Sales: ${fN(sl)}<br>Ratio: ${ratio}`;
         if(overlayVar&&monthIdx!==undefined&&US_MONTHLY_TEMP&&US_MONTHLY_TEMP[st]){
           tipHtml+=`<br>${overlayLabel}: ${overlayVar==='temp'?US_MONTHLY_TEMP[st][monthIdx]+'°F':US_MONTHLY_PRECIP[st]?US_MONTHLY_PRECIP[st][monthIdx]+' in':''}`;
@@ -1410,7 +1568,7 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title, climateDB, 
   const hasSales=Object.values(salesDB||{}).some(v=>v>0);
   for(const[st,d]of Object.entries(stData)){
     if(hasSales&&d.sales<10)continue;
-    const ratio=hasSales?(d.claims/d.sales*100):d.claims;
+    const ratio=hasSales?(d.claims/d.sales*1000):d.claims;
     const cv=d.climate[climateVar];
     if(cv===undefined)continue;
     points.push({st,claims:d.claims,sales:d.sales,ratio,cv,name:nameDB[st]});
@@ -1429,7 +1587,7 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title, climateDB, 
   const corrLabel=Math.abs(corr)>.7?'Strong':Math.abs(corr)>.4?'Moderate':Math.abs(corr)>.2?'Weak':'Very Weak';
   const corrDir=corr>0?'positive':'negative';
   const corrColor=Math.abs(corr)>.4?'var(--ac)':'var(--tx2)';
-  const yAxisLabel=hasSales?'Claim Ratio %':'Claims';
+  const yAxisLabel=hasSales?'Claims per 1K':'Claims';
   // Scatter plot
   const mxX=Math.max(...points.map(p=>p.cv));
   const mnX=Math.min(...points.map(p=>p.cv));
@@ -1452,8 +1610,8 @@ function mkClimateCorrelation(data, climateVar, climateLabel, title, climateDB, 
     const x=50+((p.cv-mnX)/xRange)*450;
     const y=H-((p.ratio/mxY)*(H-20));
     const size=Math.max(6,Math.min(14,Math.sqrt(p.claims)*2));
-    const col=p.ratio>5?'var(--rd)':p.ratio>2?'var(--or)':'var(--ac)';
-    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${col}" title="${p.name} (${p.st})\n${climateLabel}: ${p.cv}\nClaims: ${p.claims}${hasSales?'\nSales: '+fN(p.sales)+'\nRatio: '+p.ratio.toFixed(2)+'%':''}" ></div>`;
+    const col=p.ratio>50?'var(--rd)':p.ratio>20?'var(--or)':'var(--ac)';
+    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${col}" title="${p.name} (${p.st})\n${climateLabel}: ${p.cv}\nClaims: ${p.claims}${hasSales?'\nSales: '+fN(p.sales)+'\nRatio: '+p.ratio.toFixed(1)+' per 1K':''}" ></div>`;
     if(p.claims>10||n<15)h+=`<div style="position:absolute;left:${x+size/2+3}px;top:${y-4}px;font-size:8px;color:var(--tx3);pointer-events:none">${p.st}</div>`;
   });
   h+='</div>';
@@ -1550,6 +1708,9 @@ function autoMarketMap(I, data){
 // ===== CUSTOMER COMMENT EXTRACTION & FAILURE MODE CATEGORIZATION =====
 function extractCC(comment){
   if(!comment)return'';
+  // Filter out boilerplate templates and pure diagnostic notes
+  if(/^Description Code De Travail/i.test(comment.trim()))return'';
+  if(/^DIAG\s*-\s*DIAGNOSTIC\s*FOR\s*REPAIR/i.test(comment.trim()))return'';
   const segs=comment.split(/\\n|\n/).filter(s=>/^\[C\]/i.test(s.trim()));
   if(segs.length)return segs.map(s=>s.trim().replace(/^\[C\]\s*/i,'')).join(' ').trim();
   // Fallback: [D] with "CUSTOMER STATES" or "CUST STATES" pattern — these describe customer complaints
@@ -1562,44 +1723,60 @@ function extractCC(comment){
 }
 
 function categorizeFailure(text){
-  if(!text||text.length<8)return'other';
+  if(!text||text.length<8)return{cat:'other',sub:'other'};
   const lo=text.toLowerCase();
-  for(const fm of FAILURE_MODES){
-    if(fm.rx.test(lo))return fm.id;
+  for(const cat of CFM_CATS){
+    for(const sub of cat.subs){
+      if(sub.rx.test(lo))return{cat:cat.id,sub:sub.id};
+    }
   }
-  return'other';
+  return{cat:'other',sub:'other'};
 }
 
 function failureModeSummary(data){
   const withCC=data.filter(r=>r._custComment);
   if(withCC.length<2)return'';
-  // Count by failure mode category
-  const counts={};
+  // Count by failure mode category + subcategory
+  const catCounts={};const subCounts={};
   for(const r of withCC){
-    const fm=r._failureMode||'other';
-    if(!counts[fm])counts[fm]={count:0,samples:[]};
-    counts[fm].count++;
-    if(counts[fm].samples.length<3)counts[fm].samples.push(r._custComment);
+    const fm=r._failureMode||'other';const fs=r._failureSub||'other';
+    if(!catCounts[fm])catCounts[fm]={count:0,samples:[]};
+    catCounts[fm].count++;
+    if(catCounts[fm].samples.length<3)catCounts[fm].samples.push(r._custComment);
+    const sk=fm+'::'+fs;
+    if(!subCounts[sk])subCounts[sk]={cat:fm,sub:fs,count:0};
+    subCounts[sk].count++;
   }
-  const items=Object.entries(counts)
+  const items=Object.entries(catCounts)
     .sort((a,b)=>b[1].count-a[1].count)
-    .slice(0,7);
+    .slice(0,12);
   if(!items.length)return'';
   const mx=items[0][1].count;const tot=withCC.length;
   let h=`<div class="cb"><div class="ct">Customer Failure Modes / Modos de Falla del Cliente</div>`;
-  h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Categorized from ${fN(tot)} customer comments [C]</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:8px">Categorized from ${fN(tot)} customer comments [C]</div>`;
   items.forEach(([id,v],i)=>{
-    const label=fmLabel(id);
+    const label=cfmLabel(id);
     const p=mx>0?(v.count/mx*100):0;
     const pct=(v.count/tot*100).toFixed(1)+'%';
     const sampleTip=v.samples.map(s=>s.substring(0,120)).join('\n---\n');
-    h+=`<div class="br"><span class="bl" title="${esc(sampleTip)}" style="max-width:220px">${i+1}. ${esc(label)}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[i%C.length]}"></div></div><span class="bv">${v.count}</span><span class="bp">${pct}</span></div>`;
+    // Main category bar
+    h+=`<div class="br"><span class="bl" title="${esc(sampleTip)}" style="max-width:200px">${i+1}. ${esc(label)}</span><div class="bt"><div class="bf" style="width:${p}%;background:${C[i%C.length]}"></div></div><span class="bv">${v.count}</span><span class="bp">${pct}</span></div>`;
+    // Subcategory labels below the bar
+    const subs=Object.values(subCounts).filter(s=>s.cat===id).sort((a,b)=>b.count-a.count);
+    if(subs.length>0&&id!=='other'){
+      h+='<div style="margin:-2px 0 4px 16px;display:flex;flex-wrap:wrap;gap:3px">';
+      subs.forEach(s=>{
+        const sl=cfmSubLabel(s.sub);
+        h+=`<span onclick="inp.value='${esc(sl)} analysis';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:1px 6px;border-radius:8px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace" title="Click to drill down">${esc(sl)} <b style="color:var(--tx2)">${s.count}</b></span>`;
+      });
+      h+='</div>';
+    }
   });
   // Clickable failure mode drill-down chips
-  h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">';
+  h+='<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">';
   const partCtx=data.length>0?(data[0].partNM||''):'';
   items.filter(([id])=>id!=='other').forEach(([id])=>{
-    const shortLabel=fmLabel(id).split('/')[0].trim();
+    const shortLabel=cfmLabel(id);
     const q=id+' '+(partCtx?partCtx+' ':'')+'analysis';
     h+=`<button onclick="inp.value='${esc(q)}';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer">${shortLabel}</button>`;
   });
@@ -1709,6 +1886,9 @@ function genFailureMode(I){
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['With [C] Comments',fN(withCC.length),'var(--gn)',pc(withCC.length,data.length)],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--pu)']]);
   // Main failure mode summary bar chart
   h+=failureModeSummary(data);
+  // Subcategory breakdown bar chart
+  const subData=withCC.filter(r=>r._failureSub&&r._failureSub!=='other');
+  if(subData.length>2)h+=mkBar(ag(subData,'_failureSub','count').slice(0,15),'count','Subcategory Detail / Detalle de Subcategoría');
   // Failure mode × Project heatmap
   const projs=[...new Set(data.map(r=>r.proj))];
   if(projs.length>1)h+=mkHeat(data,'_failureMode','proj','Customer Failure Mode × Project');
@@ -1737,7 +1917,7 @@ function genFailureMode(I){
     const samples=withCC.slice(0,6);
     h+=`<div class="cb"><div class="ct">Sample Customer Comments [C] / Comentarios del Cliente</div>`;
     samples.forEach(r=>{
-      const fmTag=fmLabel(r._failureMode);
+      const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
       h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
     });
     h+='</div>';
@@ -3829,7 +4009,7 @@ window.addEventListener('load',()=>{
     }
     if(typeof US_SALES_BY_STATE!=='undefined')SALES_ST=US_SALES_BY_STATE;
     // Pre-compute customer failure modes from [C] comments
-    for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){r._custComment=extractCC(r.comment);r._failureMode=categorizeFailure(r._custComment);}}
+    for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){r._custComment=extractCC(r.comment);const _cfmR=categorizeFailure(r._custComment);r._failureMode=_cfmR.cat;r._failureSub=_cfmR.sub;}}
     // Load any previously imported data from IndexedDB
     loadImportedData().then(()=>init());
   } else {
@@ -4128,7 +4308,7 @@ async function loadImportedData(){
           });
         }
         // Pre-compute failure modes for imported records
-        for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){if(r._failureMode===undefined){r._custComment=extractCC(r.comment);r._failureMode=categorizeFailure(r._custComment);}}}
+        for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){if(r._failureMode===undefined){r._custComment=extractCC(r.comment);const _cfmR=categorizeFailure(r._custComment);r._failureMode=_cfmR.cat;r._failureSub=_cfmR.sub;}}}
         resolve();
       };
       tx.onerror=()=>resolve();
