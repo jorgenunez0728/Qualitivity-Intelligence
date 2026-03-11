@@ -37,11 +37,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .tw{max-height:300px;overflow:auto;border-radius:6px;border:1px solid var(--bd)}
 .cb{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:10px 0;overflow:hidden}
 .cb .ct{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
-.br{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:11.5px}
-.bl{width:180px;text-align:right;font-size:10.5px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.br{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:13px}
+.bl{width:200px;text-align:right;font-size:13px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
 .bt{flex:1;height:20px;background:var(--sf3);border-radius:4px;overflow:hidden;position:relative}
 .bf{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.25,.8,.25,1);min-width:2px}
-.bv{width:55px;font:11px 'JetBrains Mono',monospace;color:var(--tx);flex-shrink:0;text-align:right}
+.bv{width:60px;font:12.5px 'JetBrains Mono',monospace;color:var(--tx);flex-shrink:0;text-align:right}
 .bp{font-size:9px;color:var(--tx3);width:35px;flex-shrink:0}
 .hmg{display:grid;gap:2px;margin:8px 0}
 .hmc{display:flex;align-items:center;justify-content:center;font:600 10px 'JetBrains Mono',monospace;border-radius:4px;min-height:28px;transition:transform .15s;cursor:default}
@@ -1518,6 +1518,10 @@ function genAnalysis(I){
   let h=`<p><b>${esc(pn)} — Detailed Analysis</b> | ${dsl()}</p>`;
   h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--gn)'],['Avg Use Period',fN(au,1)+' mo','var(--pu)']]);
   h+=mkBar(ag(data,'natName','count').slice(0,10),'count','Failure Modes / Modos de Falla');
+  // Show DTC / Cause Codes if available
+  const dtcData=data.filter(r=>r.causeCode&&r.causeCode!=='ZZ2'&&r.causeCode!=='ZZ7');
+  const byDTC=ag(dtcData.length>0?dtcData:data,'causeCode','count').filter(d=>d.key).slice(0,8);
+  if(byDTC.length>0)h+=mkBar(byDTC,'count','Cause / DTC Codes');
   const byN=ag(data,'nation','count');if(byN.length>1)h+=mkDonut(byN,'Market / Mercado');
   const byP=ag(data,'proj','count');if(byP.length>1)h+=mkDonut(byP,'Project / Proyecto');
   if(byP.length>1)h+=mkHeat(data,'natName','proj','Nature × Project');
@@ -1535,13 +1539,54 @@ function genAnalysis(I){
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
 }
 
+function mkTrendSVG(pts,title,isCost){
+  if(!pts.length)return'';
+  const mxY=Math.max(...pts.map(p=>p.y),1)*1.2;
+  const W=560,H=200,pad=55;
+  const n=pts.length;
+  const xScale=(i)=>pad+(i/(n-1||1))*(W-pad-15);
+  const yScale=(y)=>H-25-(y/mxY)*(H-50);
+  const bw=Math.max(14,Math.min(36,(W-pad-15)/(n*1.5)));
+  // Check if last month is incomplete (current month)
+  const now=new Date();const curMKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  let svg=`<div class="cb"><div class="ct">${esc(title)}</div><svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">`;
+  for(let i=0;i<=4;i++){
+    const y=H-25-i/4*(H-50);
+    svg+=`<line x1="${pad}" y1="${y}" x2="${W-10}" y2="${y}" stroke="var(--bd)" stroke-width=".5"/>`;
+    svg+=`<text x="${pad-4}" y="${y+3}" fill="var(--tx3)" font-size="9" text-anchor="end" font-family="JetBrains Mono">${isCost?'$'+Math.round(mxY*i/4/1000)+'k':Math.round(mxY*i/4)}</text>`;
+  }
+  pts.forEach((p,i)=>{
+    const x=xScale(i);const bh=(p.y/mxY)*(H-50);
+    const isInc=String(p.m)===curMKey;
+    if(isInc){
+      svg+=`<rect x="${x-bw/2}" y="${yScale(p.y)}" width="${bw}" height="${bh}" rx="3" fill="url(#hatch_trend)" stroke="var(--pu)" stroke-width="1" stroke-dasharray="3,2" opacity=".7"/>`;
+    } else {
+      svg+=`<rect x="${x-bw/2}" y="${yScale(p.y)}" width="${bw}" height="${bh}" rx="3" fill="var(--ac)" opacity=".8"/>`;
+    }
+    svg+=`<text x="${x}" y="${H-6}" fill="${isInc?'var(--pu)':'var(--tx3)'}" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${String(p.m).slice(5)}</text>`;
+    svg+=`<text x="${x}" y="${yScale(p.y)-5}" fill="var(--tx)" font-size="9" text-anchor="middle" font-family="JetBrains Mono" font-weight="600">${isCost?'$'+Math.round(p.y/1000)+'k':p.y}</text>`;
+  });
+  // Trend line
+  if(pts.length>=2){const reg=linReg(pts.map((p,i)=>({x:i,y:p.y})));
+    svg+=`<line x1="${xScale(0)}" y1="${yScale(reg.b)}" x2="${xScale(n-1)}" y2="${yScale(reg.m*(n-1)+reg.b)}" stroke="var(--or)" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+  }
+  svg+=`<defs><pattern id="hatch_trend" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.5" height="4" fill="var(--pu)" opacity=".6"/></pattern></defs>`;
+  svg+=`</svg></div>`;return svg;
+}
 function genTrend(I){
   const data=flt(gDS(),I.filters);if(!data.length)return'<p>No data.</p>';
   const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  const byCost=ag(data,'confMonth','cost').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
   const fd=fdsc(I.filters);
   let h=`<p><b>Monthly Trend</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
-  h+=mkBar(byM,'count','Claims / Month');
-  h+=mkBar(ag(data,'confMonth','cost').sort((a,b)=>String(a.key).localeCompare(String(b.key))),'cost','Cost / Month (USD)');
+  // KPIs
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const months=byM.length;
+  const avgClaims=months>0?Math.round(byM.reduce((s,m)=>s+m.count,0)/months):0;
+  h+=mkKPIs([['Total Claims',fN(data.length),'var(--ac)'],['Months',fN(months),'var(--gn)'],['Avg/Month',fN(avgClaims),'var(--pu)'],['Total Cost',f$(tc),'var(--or)']]);
+  // SVG trend charts
+  h+=mkTrendSVG(byM.map(m=>({m:m.key,y:m.count})),'Claims / Month',false);
+  h+=mkTrendSVG(byCost.map(m=>({m:m.key,y:m.cost})),'Cost / Month (USD)',true);
   const prjs=[...new Set(data.map(r=>r.proj))].filter(Boolean);
   if(prjs.length>1)h+=mkHeat(data,'proj','confMonth','Project × Month');
   h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
@@ -1679,7 +1724,7 @@ function genDetail(I){
   const data=flt(gDS(),I.filters).slice(0,30);
   if(!data.length)return'<p>No claims found.</p>';
   let h=`<p><b>Claim Details</b> (${data.length} records)</p>`;
-  h+=mkTbl(data,[{l:'VIN',k:'vin',f:v=>v?'…'+String(v).slice(-6):''},{l:'Project',k:'proj',f:v=>esc(v||'')},{l:'Part',k:'partNM',f:v=>esc(tr(v,22))},{l:'Nature',k:'natName',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'},{l:'Cost',k:'totalCost',f:v=>f$(v)}]);
+  h+=mkTbl(data,[{l:'VIN',k:'vin',f:v=>v?'…'+String(v).slice(-6):''},{l:'Project',k:'proj',f:v=>esc(v||'')},{l:'Part',k:'partNM',f:v=>esc(tr(v,22))},{l:'Cause',k:'causeCode',f:v=>v?`<span style="font-family:'JetBrains Mono',monospace;color:var(--yl)">${esc(v)}</span>`:''},{l:'Nature',k:'natName',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'},{l:'Cost',k:'totalCost',f:v=>f$(v)}]);
   return h;
 }
 
@@ -2199,15 +2244,36 @@ function genInsights(I){
     insights.push({icon:'💰',sev:pct>15?'crit':pct>8?'high':'med',sevCls:pct>15?'sev-red':pct>8?'sev-or':'sev-yl',
       text:`<span class="ins-badge ${pct>15?'crit':pct>8?'high':'med'}">${pct>15?'CRITICAL':pct>8?'HIGH':'MEDIUM'}</span><b>${esc(top.key)}</b> is the highest-cost part at <b>${f$(top.cost)}</b> (${pct}% of total warranty cost).`});
   }
-  // 2. Month-over-month spike detection
+  // 2. Month-over-month spike detection (handle incomplete current month)
   const byMonth=ag(all,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
   if(byMonth.length>=2){
-    const last=byMonth[byMonth.length-1],prev=byMonth[byMonth.length-2];
-    const chg=prev.count>0?((last.count-prev.count)/prev.count*100).toFixed(0):0;
-    if(Math.abs(chg)>20){
-      const up=chg>0;
-      insights.push({icon:up?'📈':'📉',sev:up&&chg>50?'crit':up?'high':'low',sevCls:up&&chg>50?'sev-red':up?'sev-or':'sev-gn',
-        text:`<span class="ins-badge ${up&&chg>50?'crit':up?'high':'low'}">${up?'SPIKE':'IMPROVING'}</span>Claims ${up?'increased':'decreased'} <b>${Math.abs(chg)}%</b> from ${esc(prev.key)} (${prev.count}) to ${esc(last.key)} (${last.count}).`});
+    // Check if latest month is current (incomplete) month
+    const now=new Date();const curMKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const lastM=byMonth[byMonth.length-1];
+    const isIncomplete=String(lastM.key)===curMKey;
+    if(isIncomplete&&byMonth.length>=3){
+      // Compare the two most recent COMPLETE months + project current month
+      const prev2=byMonth[byMonth.length-3],prev1=byMonth[byMonth.length-2];
+      const chg=prev2.count>0?((prev1.count-prev2.count)/prev2.count*100).toFixed(0):0;
+      if(Math.abs(chg)>20){
+        const up=chg>0;
+        insights.push({icon:up?'📈':'📉',sev:up&&chg>50?'crit':up?'high':'low',sevCls:up&&chg>50?'sev-red':up?'sev-or':'sev-gn',
+          text:`<span class="ins-badge ${up&&chg>50?'crit':up?'high':'low'}">${up?'SPIKE':'IMPROVING'}</span>Claims ${up?'increased':'decreased'} <b>${Math.abs(chg)}%</b> from ${esc(prev2.key)} (${prev2.count}) to ${esc(prev1.key)} (${prev1.count}).`});
+      }
+      // Project current month based on days elapsed
+      const dayOfMonth=now.getDate();const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+      const projCount=Math.round(lastM.count*(daysInMonth/dayOfMonth));
+      const projChg=prev1.count>0?((projCount-prev1.count)/prev1.count*100).toFixed(0):0;
+      insights.push({icon:'📅',sev:'med',sevCls:'sev-yl',
+        text:`<span class="ins-badge med">IN PROGRESS</span><b>${esc(lastM.key)}</b> has <b>${lastM.count}</b> claims so far (${dayOfMonth}/${daysInMonth} days). Projected end-of-month: ~<b>${fN(projCount)}</b> claims (${projChg>0?'+':''}${projChg}% vs ${esc(prev1.key)}).`});
+    } else if(!isIncomplete){
+      const last=byMonth[byMonth.length-1],prev=byMonth[byMonth.length-2];
+      const chg=prev.count>0?((last.count-prev.count)/prev.count*100).toFixed(0):0;
+      if(Math.abs(chg)>20){
+        const up=chg>0;
+        insights.push({icon:up?'📈':'📉',sev:up&&chg>50?'crit':up?'high':'low',sevCls:up&&chg>50?'sev-red':up?'sev-or':'sev-gn',
+          text:`<span class="ins-badge ${up&&chg>50?'crit':up?'high':'low'}">${up?'SPIKE':'IMPROVING'}</span>Claims ${up?'increased':'decreased'} <b>${Math.abs(chg)}%</b> from ${esc(prev.key)} (${prev.count}) to ${esc(last.key)} (${last.count}).`});
+      }
     }
   }
   // 3. Dealer concentration
@@ -2315,7 +2381,16 @@ function mkForecast(data,title){
   for(const r of data){const m=r.confMonth;if(!m)continue;byM[m]=(byM[m]||{count:0,cost:0});byM[m].count+=(r.claims||1);byM[m].cost+=(r.totalCost||0);}
   const months=Object.keys(byM).sort();
   if(months.length<3)return'<p>Need at least 3 months of data for forecast.</p>';
-  const pts=months.map((m,i)=>({x:i,y:byM[m].count,m,cost:byM[m].cost}));
+  // Adjust incomplete current month by projecting to full month
+  const now=new Date();const curMKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const lastMonth=months[months.length-1];
+  if(lastMonth===curMKey){
+    const dayOfMonth=now.getDate();const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const ratio=daysInMonth/Math.max(dayOfMonth,1);
+    byM[lastMonth].count=Math.round(byM[lastMonth].count*ratio);
+    byM[lastMonth].cost=Math.round(byM[lastMonth].cost*ratio);
+  }
+  const pts=months.map((m,i)=>({x:i,y:byM[m].count,m,cost:byM[m].cost,isProjected:m===curMKey}));
   const reg=linReg(pts);
   const costPts=months.map((m,i)=>({x:i,y:byM[m].cost}));
   const costReg=linReg(costPts);
@@ -2394,7 +2469,34 @@ function genForecast(I){
   // Cost forecast
   const costFc=mkForecast(data,'Cost Forecast (USD) — Next 3 Months');
   if(typeof costFc!=='string')h+=costFc.html;
-  h+=`<p style="font-size:10px;color:var(--tx3);margin-top:8px">⚠️ Projections based on linear regression. Actual results may vary due to seasonal, production, or policy changes.</p>`;
+  // KPI Impact Projections
+  const totalCost=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const avgCostPerClaim=data.length>0?totalCost/data.length:0;
+  const projAvgMonthlyClaims=projTotClaims/3;
+  const projAvgMonthlyCost=projTotCost/3;
+  const byPart=ag(data,'partNM','cost');
+  const topPartProjCost=byPart[0]?(byPart[0].cost/totalCost)*projTotCost:0;
+  h+=`<div style="margin:12px 0 6px;padding:8px 12px;background:var(--sf2);border-radius:8px;border-left:3px solid var(--pu)">`;
+  h+=`<b style="color:var(--pu)">📊 KPI Impact Projection / Proyección de KPIs</b></div>`;
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">`;
+  h+=`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px">`;
+  h+=`<div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Avg Monthly Claims (Proj.)</div>`;
+  h+=`<div style="font:700 18px 'JetBrains Mono',monospace;color:var(--ac)">${fN(Math.round(projAvgMonthlyClaims))}</div>`;
+  h+=`<div style="font-size:10px;color:${fcResult.reg.m>0?'var(--rd)':'var(--gn)'}">${fcResult.reg.m>0?'↑':'↓'} ${Math.abs(fcResult.reg.m).toFixed(1)}/mo trend</div></div>`;
+  h+=`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px">`;
+  h+=`<div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Avg Monthly Cost (Proj.)</div>`;
+  h+=`<div style="font:700 18px 'JetBrains Mono',monospace;color:var(--or)">${f$(Math.round(projAvgMonthlyCost))}</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx2)">Avg ${f$(avgCostPerClaim)}/claim</div></div>`;
+  h+=`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px">`;
+  h+=`<div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Top Part Risk (Proj.)</div>`;
+  h+=`<div style="font:700 14px 'JetBrains Mono',monospace;color:var(--rd)">${f$(Math.round(topPartProjCost))}</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx2)">${byPart[0]?esc(tr(byPart[0].key,20)):'-'}</div></div>`;
+  h+=`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px">`;
+  h+=`<div style="font-size:9px;color:var(--tx3);text-transform:uppercase">6-Month Projected Cost</div>`;
+  const proj6m=Math.max(0,Array.from({length:6},(_,i)=>Math.round(fcResult.costReg.m*(fcResult.projMonths[0].x+i)+fcResult.costReg.b)).reduce((a,b)=>a+b,0));
+  h+=`<div style="font:700 18px 'JetBrains Mono',monospace;color:var(--yl)">${f$(proj6m)}</div>`;
+  h+=`<div style="font-size:10px;color:var(--tx2)">extended forecast</div></div></div>`;
+  h+=`<p style="font-size:10px;color:var(--tx3);margin-top:8px">⚠️ Projections based on linear regression. Actual results may vary due to seasonal, production, or policy changes. Incomplete months are auto-projected to full month.</p>`;
   h+=`<span class="st">Forecast · ${fN(data.length)} claims · R²=${fcResult.reg.r2.toFixed(3)}</span>`;
   return h;
 }
@@ -2433,9 +2535,36 @@ function genRepeatVIN(I){
   h+='</tbody></table></div>';
   // Distribution
   h+=mkBar(ag(repeats.flatMap(r=>r.claims),'partNM','count').slice(0,10),'count','Top Parts in Repeat VINs');
+  // === TRUE RECIDIVISM: Same VIN + Same Part ===
+  const vinPartMap={};
+  for(const r of data){
+    if(!r.vin||!r.partNM)continue;
+    const k=r.vin+'||'+r.partNM;
+    if(!vinPartMap[k])vinPartMap[k]={vin:r.vin,part:r.partNM,proj:r.proj,count:0,cost:0,months:[],dealers:new Set(),causeCode:r.causeCode||''};
+    vinPartMap[k].count++;vinPartMap[k].cost+=(r.totalCost||0);
+    if(r.confMonth)vinPartMap[k].months.push(r.confMonth);
+    vinPartMap[k].dealers.add(r.dealer);
+    if(r.causeCode)vinPartMap[k].causeCode=r.causeCode;
+  }
+  const trueRecid=Object.values(vinPartMap).filter(v=>v.count>=2).sort((a,b)=>b.count-a.count||b.cost-a.cost);
+  if(trueRecid.length>0){
+    const recidCost=trueRecid.reduce((s,r)=>s+r.cost,0);
+    h+=`<div style="margin:14px 0 6px;padding:8px 12px;background:var(--sf2);border-radius:8px;border-left:3px solid var(--rd)">`;
+    h+=`<b style="color:var(--rd)">🔴 True Recidivism / Reincidencia Real</b> — Same VIN + Same Part`;
+    h+=`<span style="margin-left:12px;font-size:11px;color:var(--tx2)">${fN(trueRecid.length)} cases · ${f$(recidCost)} total cost</span></div>`;
+    h+='<div class="tw"><table><thead><tr><th>VIN (last 6)</th><th>Part</th><th>Project</th><th>Repeat Count</th><th>Cause Code</th><th>Cost</th><th>Months</th><th>Dealers</th></tr></thead><tbody>';
+    trueRecid.slice(0,25).forEach(r=>{
+      const sevColor=r.count>=3?'var(--rd)':'var(--or)';
+      h+=`<tr><td style="font-family:'JetBrains Mono',monospace">…${r.vin.slice(-6)}</td><td>${esc(tr(r.part,25))}</td><td>${esc(r.proj)}</td><td style="color:${sevColor};font-weight:700">${r.count}×</td><td style="font-family:'JetBrains Mono',monospace">${esc(r.causeCode)}</td><td>${f$(r.cost)}</td><td style="font-size:10px">${r.months.sort().join(', ')}</td><td>${esc([...r.dealers].join(', '))}</td></tr>`;
+    });
+    h+='</tbody></table></div>';
+    h+=mkBar(ag(trueRecid.map(r=>({partNM:r.part})),'partNM','count').slice(0,10),'count','Parts with Most Recidivism');
+  } else {
+    h+=`<p style="color:var(--gn);margin-top:10px">✅ No true recidivism found (no VIN claimed twice for the same part).</p>`;
+  }
   _lastExport=repeats;
   h+=mkExpBtn(repeats,'Export Repeat VINs');
-  h+=`<span class="st">Repeat VIN · ${fN(repeats.length)} vehicles</span>`;
+  h+=`<span class="st">Repeat VIN · ${fN(repeats.length)} vehicles · ${fN(trueRecid.length)} true recidivism</span>`;
   return h;
 }
 
@@ -3135,7 +3264,7 @@ function proc(q){
 // ===== CHAT UI =====
 const ch=document.getElementById('ch');
 const inp=document.getElementById('inp');
-function addM(c,u){const d=document.createElement('div');d.className=`m ${u?'u':'b'}`;if(u)d.textContent=c;else d.innerHTML=c;ch.appendChild(d);ch.scrollTop=ch.scrollHeight;if(!u)setTimeout(animKPIs,60);}
+function addM(c,u){const d=document.createElement('div');d.className=`m ${u?'u':'b'}`;if(u)d.textContent=c;else d.innerHTML=c;ch.appendChild(d);if(u){ch.scrollTop=ch.scrollHeight;}else{setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'start'});},80);setTimeout(animKPIs,60);}}
 function showT(){const d=document.createElement('div');d.className='m b';d.id='typ';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';ch.appendChild(d);ch.scrollTop=ch.scrollHeight;}
 function hideT(){const e=document.getElementById('typ');if(e)e.remove();}
 function send(){const q=inp.value.trim();if(!q)return;const drop=document.getElementById('acDrop');if(drop)drop.style.display='none';_acIdx=-1;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
