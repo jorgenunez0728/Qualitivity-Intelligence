@@ -82,6 +82,26 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 @keyframes sp{to{transform:rotate(360deg)}}
 .lo p{color:var(--tx2);font-size:13px}
 @media(max-width:768px){.pills{display:none}.kstrip{flex-wrap:wrap}.kp{min-width:33%}.m{max-width:98%}.bl{width:110px;font-size:9px}}
+.share-btn{width:34px;height:34px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.share-btn:hover{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+.share-btn svg{width:16px;height:16px}
+.share-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.share-modal.open{opacity:1;pointer-events:auto}
+.share-box{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:28px 32px;max-width:360px;width:90%;text-align:center;transform:scale(.92);transition:transform .2s}
+.share-modal.open .share-box{transform:scale(1)}
+.share-box h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.share-box h3 span{color:var(--ac)}
+.share-box .share-sub{font-size:12px;color:var(--tx2);margin-bottom:16px}
+.share-box canvas{border-radius:10px;margin:0 auto 16px;display:block;background:#fff;padding:10px}
+.share-box .share-url{font:11px 'JetBrains Mono',monospace;color:var(--tx3);background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;word-break:break-all;margin-bottom:16px;max-height:60px;overflow:auto;text-align:left}
+.share-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.share-actions button{font:600 12px 'DM Sans',sans-serif;padding:8px 18px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;transition:all .15s}
+.share-dl{background:linear-gradient(135deg,var(--ac),var(--pu));border:none!important;color:#fff}
+.share-dl:hover{transform:scale(1.04);box-shadow:0 0 16px rgba(56,189,248,.3)}
+.share-close{background:var(--sf2);color:var(--tx2)}
+.share-close:hover{border-color:var(--ac);color:var(--ac)}
+.share-copy{background:var(--sf2);color:var(--tx2)}
+.share-copy:hover{border-color:var(--gn);color:var(--gn)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
@@ -91,7 +111,21 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <header class="hdr">
 <div class="hdr-l"><div class="logo">Qi</div><div class="hdr-t">Qualitivity <span>Intelligence</span></div></div>
 <div class="pills"><span class="pill">Data: <b>Mar 2026</b></span><span class="pill" id="pC">Claims: <b>—</b></span><span class="pill">Phase <b>1</b></span></div>
+<button class="share-btn" onclick="openShare()" title="Share / Compartir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
 </header>
+<div class="share-modal" id="shareModal" onclick="if(event.target===this)closeShare()">
+<div class="share-box">
+<h3>Compartir <span>Qualitivity</span></h3>
+<p class="share-sub">Escanea el QR para abrir en tu celular</p>
+<canvas id="qrCanvas" width="200" height="200"></canvas>
+<div class="share-url" id="shareUrl"></div>
+<div class="share-actions">
+<button class="share-dl" onclick="downloadApp()">Descargar HTML</button>
+<button class="share-copy" onclick="copyUrl()">Copiar URL</button>
+<button class="share-close" onclick="closeShare()">Cerrar</button>
+</div>
+</div>
+</div>
 <div class="kstrip" id="ks"></div>
 <div class="main">
 <div class="chat" id="ch"></div>
@@ -1032,6 +1066,61 @@ function init(){
 </p>
 <span class="st">KMX Qualitivity · Mar 2026 · Phase 1 MVP</span>`,false);
   document.getElementById('lo').style.display='none';inp.focus();
+}
+
+// ===== QR CODE GENERATOR (minimal, offline) =====
+const QR=(function(){
+const EC_L=1;
+function getSize(ver){return ver*4+17}
+function createMatrix(ver){const n=getSize(ver);return Array.from({length:n},()=>Array(n).fill(null))}
+function setModule(m,r,c,v){if(r>=0&&r<m.length&&c>=0&&c<m.length)m[r][c]=v?1:0}
+function addFinderPattern(m,r,c){for(let dr=-1;dr<=7;dr++)for(let dc=-1;dc<=7;dc++){const v=(dr===0||dr===6)?(dc>=0&&dc<=6):((dc===0||dc===6)?(dr>=0&&dr<=6):((dr>=2&&dr<=4&&dc>=2&&dc<=4)?(true):(false)));if(dr>=0&&dr<=6&&dc>=0&&dc<=6)setModule(m,r+dr,c+dc,v);else setModule(m,r+dr,c+dc,false)}}
+function addTimingPatterns(m){const n=m.length;for(let i=8;i<n-8;i++){if(m[6][i]===null)m[6][i]=i%2===0?1:0;if(m[i][6]===null)m[i][6]=i%2===0?1:0}}
+function addAlignmentPattern(m,r,c){for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){const v=Math.max(Math.abs(dr),Math.abs(dc));setModule(m,r+dr,c+dc,v!==1)}}
+const ALIGN_POS={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+function addAlignmentPatterns(m,ver){const pos=ALIGN_POS[ver]||[];for(let i=0;i<pos.length;i++)for(let j=0;j<pos.length;j++){const r=pos[i],c=pos[j];if(m[r][c]===null)addAlignmentPattern(m,r,c)}}
+function reserveFormatArea(m){const n=m.length;for(let i=0;i<8;i++){if(m[8][i]===null)m[8][i]=0;if(m[i][8]===null)m[i][8]=0;if(m[8][n-1-i]===null)m[8][n-1-i]=0;if(m[n-1-i][8]===null)m[n-1-i][8]=0}if(m[8][8]===null)m[8][8]=0;m[n-8][8]=1}
+function encodeData(text){const bytes=[];for(let i=0;i<text.length;i++){const cp=text.codePointAt(i);if(cp<128)bytes.push(cp);else if(cp<2048){bytes.push(192|(cp>>6));bytes.push(128|(cp&63))}else{bytes.push(224|(cp>>12));bytes.push(128|((cp>>6)&63));bytes.push(128|(cp&63))}}return bytes}
+const CAPS_L=[0,19,34,55,80,108,136,156,194,232,274,324,370,428,461,523,589,647,721,795,861];
+function getVersion(dataLen){for(let v=1;v<=10;v++){const cap=CAPS_L[v];if(cap===undefined)continue;if(dataLen<=cap)return v}return 10}
+function getDataCodewords(text,ver){const bytes=encodeData(text);const totalCap=CAPS_L[ver];const bits=[];bits.push(0,1,0,0);const lenBits=ver<=9?8:16;const bl=bytes.length;for(let i=lenBits-1;i>=0;i--)bits.push((bl>>i)&1);for(const b of bytes)for(let i=7;i>=0;i--)bits.push((b>>i)&1);while(bits.length<totalCap*8){bits.push(0,0,0,0);if(bits.length>=totalCap*8)break}while(bits.length<totalCap*8)bits.push(0);const cw=[];for(let i=0;i<bits.length;i+=8){let v=0;for(let j=0;j<8;j++)v=(v<<1)|(bits[i+j]||0);cw.push(v)}while(cw.length<totalCap){cw.push(cw.length%2===0?236:17)}return cw}
+function gf256Mul(a,b){if(a===0||b===0)return 0;const LOG=new Uint8Array(256),EXP=new Uint8Array(256);let v=1;for(let i=0;i<255;i++){EXP[i]=v;LOG[v]=i;v<<=1;if(v>=256)v^=285}EXP[255]=EXP[0];return EXP[(LOG[a]+LOG[b])%255]}
+function rsEncode(data,nsym){const LOG=new Uint8Array(256),EXP=new Uint8Array(512);let v=1;for(let i=0;i<255;i++){EXP[i]=v;LOG[v]=i;v<<=1;if(v>=256)v^=285}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];const gen=[1];for(let i=0;i<nsym;i++){const ng=new Array(gen.length+1).fill(0);for(let j=0;j<gen.length;j++){ng[j]^=gen[j];ng[j+1]^=(gen[j]===0?0:EXP[(LOG[gen[j]]+i)%255])}for(let j=0;j<ng.length;j++)gen[j]=ng[j]||0;while(gen.length>nsym+1)gen.shift()}const msg=new Uint8Array(data.length+nsym);for(let i=0;i<data.length;i++)msg[i]=data[i];for(let i=0;i<data.length;i++){const coef=msg[i];if(coef!==0)for(let j=0;j<gen.length;j++){if(gen[j]!==0)msg[i+j]^=EXP[(LOG[gen[j]]+LOG[coef])%255]}}return Array.from(msg.slice(data.length))}
+const EC_TABLE={1:[1,19,7],2:[1,34,10],3:[1,55,15],4:[1,80,20],5:[1,108,26],6:[2,68,18],7:[2,78,18],8:[2,97,22],9:[2,116,26],10:[2,136,28]};
+function getCodewords(text,ver){const info=EC_TABLE[ver];const numBlocks=info[0],totalData=info[1],ecPerBlock=info[2];const dataCw=getDataCodewords(text,ver);const dataPerBlock=Math.floor(totalData/numBlocks);const blocks=[];let offset=0;for(let i=0;i<numBlocks;i++){const bLen=i<numBlocks?dataPerBlock:dataPerBlock+1;blocks.push(dataCw.slice(offset,offset+bLen));offset+=bLen}const ecBlocks=blocks.map(b=>rsEncode(b,ecPerBlock));const result=[];const maxDataLen=Math.max(...blocks.map(b=>b.length));for(let i=0;i<maxDataLen;i++)for(const b of blocks)if(i<b.length)result.push(b[i]);for(let i=0;i<ecPerBlock;i++)for(const b of ecBlocks)if(i<b.length)result.push(b[i]);return result}
+function placeData(m,codewords){const n=m.length;const bits=[];for(const cw of codewords)for(let i=7;i>=0;i--)bits.push((cw>>i)&1);let idx=0;let upward=true;for(let col=n-1;col>=1;col-=2){if(col===6)col=5;const rows=upward?[...Array(n).keys()].reverse():[...Array(n).keys()];for(const row of rows){for(let dc=0;dc<=1;dc++){const c=col-dc;if(m[row][c]===null){m[row][c]=idx<bits.length?bits[idx]:0;idx++}}}upward=!upward}}
+const FORMAT_BITS=[0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6976,0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED,0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B];
+function addFormatInfo(m,mask){const bits=FORMAT_BITS[mask];const n=m.length;for(let i=0;i<6;i++)m[8][i]=(bits>>(14-i))&1;m[8][7]=(bits>>8)&1;m[8][8]=(bits>>7)&1;m[7][8]=(bits>>6)&1;for(let i=0;i<6;i++)m[5-i][8]=(bits>>(i))&1;for(let i=0;i<8;i++)m[n-1-i][8]=(bits>>(i))&1;for(let i=0;i<7;i++)m[8][n-7+i]=(bits>>(6-i+8))&1}
+function applyMask(m,mask){const n=m.length;const r=m.map(row=>row.slice());for(let i=0;i<n;i++)for(let j=0;j<n;j++){if(r[i][j]===null)continue;let flip=false;switch(mask){case 0:flip=(i+j)%2===0;break;case 1:flip=i%2===0;break;case 2:flip=j%3===0;break;case 3:flip=(i+j)%3===0;break;case 4:flip=(Math.floor(i/2)+Math.floor(j/3))%2===0;break;case 5:flip=(i*j)%2+(i*j)%3===0;break;case 6:flip=((i*j)%2+(i*j)%3)%2===0;break;case 7:flip=((i+j)%2+(i*j)%3)%2===0;break}if(flip)r[i][j]^=1}return r}
+function generate(text){const ver=getVersion(encodeData(text).length);const n=getSize(ver);let m=createMatrix(ver);addFinderPattern(m,0,0);addFinderPattern(m,0,n-7);addFinderPattern(m,n-7,0);addTimingPatterns(m);addAlignmentPatterns(m,ver);reserveFormatArea(m);const codewords=getCodewords(text,ver);placeData(m,codewords);const masked=applyMask(m,0);addFormatInfo(masked,0);return masked}
+function render(canvas,text,size){const matrix=generate(text);const n=matrix.length;const scale=Math.floor(size/n);const ctx=canvas.getContext('2d');canvas.width=canvas.height=n*scale+20;ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#000000';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(matrix[r][c])ctx.fillRect(10+c*scale,10+r*scale,scale,scale)}
+return{render}
+})();
+
+// ===== SHARE FUNCTIONS =====
+function openShare(){
+  const modal=document.getElementById('shareModal');
+  const url=window.location.href;
+  document.getElementById('shareUrl').textContent=url;
+  try{QR.render(document.getElementById('qrCanvas'),url,200)}catch(e){document.getElementById('qrCanvas').style.display='none'}
+  modal.classList.add('open');
+}
+function closeShare(){document.getElementById('shareModal').classList.remove('open')}
+function downloadApp(){
+  const html=document.documentElement.outerHTML;
+  const blob=new Blob(['<!DOCTYPE html>\n'+html],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='qualitivity_intelligence.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function copyUrl(){
+  navigator.clipboard.writeText(window.location.href).then(()=>{
+    const btn=document.querySelector('.share-copy');
+    btn.textContent='Copiado!';
+    setTimeout(()=>btn.textContent='Copiar URL',1500);
+  }).catch(()=>{});
 }
 
 window.addEventListener('load',()=>{
