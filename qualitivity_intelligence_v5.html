@@ -1053,18 +1053,8 @@ function init(){
     <div class="kp"><div class="kl">Total Cost</div><div class="kv" style="color:var(--rd)">${f$(tc)}</div><div class="ks">All datasets</div></div>
     <div class="kp"><div class="kl">Top 3M</div><div class="kv" style="color:var(--yl);font-size:12px">${tp?tp.key:'—'}</div><div class="ks">${tp?tp.count+' claims':'—'}</div></div>`;
   mkChips();
-  addM(`<p><b>Qualitivity Intelligence</b> — Phase 1 MVP</p>
-<p>${fN(all.length)} warranty claims loaded: <b>3M</b> ${fN(D['3M'].length)} · <b>DC</b> ${fN(D['DC'].length)} · <b>12M</b> ${fN(D['12M'].length)}</p>
-<div class="kg"><div class="kc"><div class="kcl">3M</div><div class="kcv" style="color:var(--ac)">${fN(D['3M'].length)}</div></div><div class="kc"><div class="kcl">DC</div><div class="kcv" style="color:var(--gn)">${fN(D['DC'].length)}</div></div><div class="kc"><div class="kcl">12M</div><div class="kcv" style="color:var(--or)">${fN(D['12M'].length)}</div></div></div>
-<p style="margin-top:8px"><b>New: 🗺️ Geographic Maps</b> — "USA map normalized by sales"</p>
-<p style="margin-top:2px"><b>New: 🌡️ Climate Correlation</b> — "Battery claims vs winter temperature" · "Climate analysis"</p>
-<p style="margin-top:2px"><b>New: 🏷️ Smart Categories</b> — "Electrical analysis" · "Powertrain" · "HVAC" · "Braking" · "Infotainment" · "Body/Trim" · "Steering"</p>
-<p style="margin-top:4px;color:var(--tx2);font-size:12px;line-height:1.8">
-🇬🇧 "Top 10 parts by cost USA" · "Battery CL4" · "Map USA claims normalized" · "HVAC analysis" · "Dealer anomalies" · "Pareto" · "Compare projects"<br>
-🇪🇸 "Top 10 partes USA" · "Mapa de garantías USA ponderado por ventas" · "Análisis batería CL4" · "Anomalías dealers" · "Tendencia mensual"<br>
-🇰🇷 "배터리 분석 CL4" · "미국 지도" · "딜러 이상 탐지" · "월별 추세" · "부품별 상위 10"
-</p>
-<span class="st">KMX Qualitivity · Mar 2026 · Phase 1 MVP</span>`,false);
+  addM(`<p style="font-size:18px;margin-bottom:4px"><b>Qualitivity Intelligence</b></p>
+<p style="color:var(--tx2);font-size:13px">Qualitivity v5 · Data: Mar 2026 · ${fN(all.length)} claims</p>`,false);
   document.getElementById('lo').style.display='none';inp.focus();
 }
 
