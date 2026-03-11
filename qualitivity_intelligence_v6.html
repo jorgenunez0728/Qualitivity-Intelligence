@@ -3577,18 +3577,8 @@ function init(){
   document.getElementById('pC').innerHTML=`Claims: <b>${fN(all.length)}</b>`;
   buildIdx(); // Level 2: build fuzzy entity index
   mkChips();
-  // Calculate welcome KPIs
-  const totalCost=all.reduce((s,r)=>s+(r.totalCost||0),0);
-  const markets=[...new Set(all.map(r=>r.nation).filter(Boolean))].length;
-  const uniqueParts=_IDX?_IDX.parts.length:[...new Set(all.map(r=>r.partNM).filter(Boolean))].length;
-  addM(`<p style="font-size:16px;margin-bottom:2px"><b>Qualitivity Intelligence</b> <span style="color:var(--tx3);font-size:11px">v7 NLP²</span></p>
-<div class="wkpi">
-<div class="wkc" style="animation-delay:0s"><div class="wkv"><span class="anim-kpi" data-target="${fN(all.length)}">0</span></div><div class="wkl">Claims</div></div>
-<div class="wkc" style="animation-delay:.1s"><div class="wkv"><span class="anim-kpi" data-target="${f$(totalCost)}">$0</span></div><div class="wkl">Total Cost</div></div>
-<div class="wkc" style="animation-delay:.2s"><div class="wkv"><span class="anim-kpi" data-target="${markets}">0</span></div><div class="wkl">Markets</div></div>
-<div class="wkc" style="animation-delay:.3s"><div class="wkv"><span class="anim-kpi" data-target="${fN(uniqueParts)}">0</span></div><div class="wkl">Unique Parts</div></div>
-</div>
-<p style="font-size:11px;color:var(--tx3);margin-top:4px">3M ${fN(D['3M'].length)} · DC ${fN(D['DC'].length)} · 12M ${fN(D['12M'].length)} · Type a question or tap a suggestion · <b>Ctrl+K</b> command palette</p>`,false);
+  addM(`<p style="font-size:18px;margin-bottom:4px"><b>Qualitivity Intelligence</b></p>
+<p style="color:var(--tx2);font-size:13px">Qualitivity v6 · Data: Mar 2026 · ${fN(all.length)} claims</p>`,false);
   // Hide loader, show splash, then focus
   document.getElementById('lo').style.display='none';
   showSplash(()=>{
