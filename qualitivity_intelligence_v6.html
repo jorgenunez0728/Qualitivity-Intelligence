@@ -1739,8 +1739,30 @@ function categorizeFailure(text){
   return{cat:'other',sub:'other'};
 }
 
+// Deduplicate CFM claims: same VIN+partNM within 100 km = same visit, keep only first
+function dedupCfm(records){
+  const groups={};
+  for(const r of records){
+    const k=(r.vin||'')+'|'+(r.partNM||'');
+    if(!groups[k])groups[k]=[];
+    groups[k].push(r);
+  }
+  const out=[];
+  for(const k in groups){
+    const g=groups[k].sort((a,b)=>(a.mileage||0)-(b.mileage||0));
+    out.push(g[0]);
+    for(let i=1;i<g.length;i++){
+      // Only keep if >100 km from all previously kept claims (return visit)
+      const kept=out.filter(o=>(o.vin||'')+'|'+(o.partNM||'')===k);
+      const minDist=Math.min(...kept.map(o=>Math.abs((g[i].mileage||0)-(o.mileage||0))));
+      if(minDist>100)out.push(g[i]);
+    }
+  }
+  return out;
+}
+
 function failureModeSummary(data){
-  const withCC=data.filter(r=>r._custComment);
+  const withCC=dedupCfm(data.filter(r=>r._custComment));
   if(withCC.length<2)return'';
   // Count by failure mode category + subcategory
   const catCounts={};const subCounts={};
@@ -2125,7 +2147,7 @@ function genDetail(I){
 // ===== CFM COMMENTS TABLE (drill-down from subcategory labels) =====
 function genCfmComments(I){
   const data=flt(gDS(),I.filters);
-  const withCC=data.filter(r=>r._custComment&&r._custComment.length>=8);
+  const withCC=dedupCfm(data.filter(r=>r._custComment&&r._custComment.length>=8));
   if(!withCC.length)return'<p>No customer comments found for this filter. / Sin comentarios de cliente.</p>';
   const subId=I.filters._failureSub;const catId=I.filters._failureMode;
   const titleLabel=subId?cfmFullLabel(catId,subId):catId?cfmLabel(catId):'All Failure Modes';
