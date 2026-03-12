@@ -1209,7 +1209,7 @@ const _SYMPTOM_KW=/noise|ruido|crack|pop\b|vibra|leak|fuga|squeak|rechinido|inop
 if(_SYMPTOM_KW.test(lo)){
   // Strip NLP noise + known part names + known filters to isolate symptom description
   const _partWords=(I.filters.partNM||'').toLowerCase().replace(/[_-]/g,' ').split(/\s+/).filter(w=>w.length>2);
-  const natQ=lo.replace(/\b(cuantos?|cuantas?|how\s*many|of\b|claims?|garanti|warranty|que|tienen?|tiene|que\s*ver|con|del?|los?|las?|el|la|en|por|usa|u\.?s\.?a|mexi[ck]o|canada|analysis|analisis|modo\s*de\s*falla|failure\s*mode|ranking|top\s*\d*|show|me|the|for|cl4|nx4m?|bl7m?)\b/g,'').replace(new RegExp('\\b('+_partWords.join('|')+')\\b','gi'),'').replace(/\s+/g,' ').trim();
+  const natQ=lo.replace(/\b(cuantos?|cuantas?|how\s*many|of\b|claims?|garanti|warranty|que|tienen?|tiene|que\s*ver|con|del?|los?|las?|el|la|en|por|usa|u\.?s\.?a|mexi[ck]o|canada|australia|colombia|peru|panama|chile|saudi|kuwait|qatar|analysis|analisis|modo\s*de\s*falla|failure\s*mode|ranking|top\s*\d*|show|me|the|for|with|during|cl4|nx4m?|bl7m?|map|mapa|temperature|temperatura|trend|tendencia|heatmap|scatter|pareto|donut|treemap|monthly|mensual|geographic|geografic|climate|clima|correlation|correlacion|normalized|ponderado|average|avg|promedio|january|febrero|march|marzo|april|abril|mayo|june|junio|july|julio|august|agosto|september|septiembre|october|octubre|november|noviembre|december|diciembre|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dic)\b/g,'').replace(new RegExp('\\b('+_partWords.join('|')+')\\b','gi'),'').replace(/\s+/g,' ').trim();
   if(natQ.length>2){
     const terms=natQ.split(/\s+(?:o\b|or\b|y\b|and\b)\s+/).map(t=>t.trim()).filter(t=>t.length>2);
     I.filters._natSearch=terms.length?terms:[natQ];
@@ -1239,7 +1239,15 @@ if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
 if(I.filters._natSearch&&(I.filters.partNM||I.filters._sysCategory||I.filters._hvac))I.type='analysis';
 // Failure mode category filter — detect failure mode keywords and set _failureMode filter
 const _FM_PARSE={not_starting:/\bnot\s*start|no\s*(arranca|enciende|prende)|won.?t\s*start|dead\s*battery|jump\s*start|stall|se\s*apag/i,warning_light:/\bwarning|testigo|check\s*engine|light\s*on|dtc|airbag\s*light|alert|alerta/i,not_working:/\binoper|not\s*work|no\s*funciona|won.?t\s*work|won.?t\s*open|horn\s*inop|wiper|blower/i,noise_vibration:/\b(noise|ruido|vibra(tion|ci[oó]n)|squeak|rattle|knock|clunk|grind|bruit)/i,fluid_leak:/\b(leak|fuga|fluid|oil\b|aceite|moisture|coolant|water\s*leak)/i,physical_damage:/\b(broken|roto|crack|damage|da[ñn]o|loose|scratch|rust|peel|missing)/i,performance:/\b(performance|pull(ing|s)?\s*(left|right)|hard\s*to|soft\s*(pedal|brake)|rough\s*idle|shift|jerk|jalonea|sluggish|weak)/i,ac_climate:/\b(a\/?c|air\s*cond|aire\s*acond|no\s*enfr|not\s*cool|no\s*heat|smoke|humo|olor)/i,electrical:/\b(battery|bater|charg|light\s*out|lamp|faro|wiring|sensor|electr|fuse)/i,infotainment:/\b(screen|display|camera|speaker|audio|radio|bluetooth|infotainment|monitor|pantalla)/i,body_access:/\b(door|puerta|window|ventana|trunk|hatch|cajuela|seat\s*belt|key\s*fob|mirror|espejo|windshield)/i,intermittent:/\bintermit|err[aá]tic|sporadic|comes\s*and\s*goes/i,pdi_delivery:/\bpdi|pre.?delivery/i};
-if(!I.filters._natSearch){for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(lo)){I.filters._failureMode=fmId;break;}}}
+if(!I.filters._natSearch){
+  // Build a version of the query without part-name words to avoid false FM matches
+  let _fmLo=lo;
+  if(I.filters.partNM){
+    const _pw=I.filters.partNM.toLowerCase().replace(/[_-]/g,' ').split(/\s+/).filter(w=>w.length>2);
+    if(_pw.length)_fmLo=lo.replace(new RegExp('\\b('+_pw.join('|')+')\\b','gi'),'');
+  }
+  for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(_fmLo)){I.filters._failureMode=fmId;break;}}
+}
 // Subcategory detection — match subcategory labels as query terms
 if(!I.filters._failureSub){for(const sub of Object.values(CFM_SUB_LOOKUP)){const sl=sub.label.toLowerCase().replace(/[^a-z0-9\s]/g,'');if(lo.includes(sl)&&sl.length>4){I.filters._failureSub=sub.id;if(!I.filters._failureMode)I.filters._failureMode=sub.cat;break;}}}
 // VIN detail intent
