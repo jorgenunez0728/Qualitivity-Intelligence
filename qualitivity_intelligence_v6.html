@@ -1272,8 +1272,8 @@ if((I.filters._failureSub||I.filters._failureMode)&&/comment|comentario|detail|d
 if(I.filters._failureSub&&(I.type==='unknown'||I.type==='ranking'))I.type='cfm_comments';
 // Failure mode analysis intent detection
 if(/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|customer\s*(complaint|failure)|queja.*cliente|고장\s*모드|failure\s*mode\s*analysis/i.test(lo))I.type='failuremode';
-// When failure mode filter active with part/system, route to analysis
-if((I.filters._failureMode||I.filters._failureSub)&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='failuremode'&&I.type!=='cfm_comments'&&I.type!=='vin_detail'&&I.type!=='map'&&I.type!=='climate')I.type='analysis';
+// When failure mode filter active with part/system, route to failuremode (shows full breakdown with focus)
+if((I.filters._failureMode||I.filters._failureSub)&&(I.filters.partNM||I.filters._sysCategory)&&I.type!=='cfm_comments'&&I.type!=='vin_detail'&&I.type!=='map'&&I.type!=='climate')I.type='failuremode';
 // Normalized map hint
 if(/normaliz|ponder|weight|index|per\s*capita|adjust|por\s*venta|per\s*sale|sales\s*volume/.test(lo))I.normalized=true;
 // Level 5B: Temporal logic
@@ -2115,15 +2115,51 @@ function genAnalysis(I){
 }
 
 function genFailureMode(I){
-  const data=flt(gDS(),I.filters);
+  // When a specific _failureMode is requested with a part, get ALL data for the part first (don't hard-filter by mode)
+  const requestedFM=I.filters._failureMode||null;
+  const requestedFS=I.filters._failureSub||null;
+  const baseFilters=Object.assign({},I.filters);
+  if(requestedFM)delete baseFilters._failureMode;
+  if(requestedFS)delete baseFilters._failureSub;
+  const data=flt(gDS(),baseFilters);
   if(!data.length)return'<p>No claims found. / Sin resultados.</p>';
   const withCC=data.filter(r=>r._custComment);
   const pn=I.filters.partNM||(I.filters._sysCategory?SYS_CAT[I.filters._sysCategory].label:I.filters._hvac?'HVAC/Climate':'All Parts');
-  const fmFilter=I.filters._failureMode?fmLabel(I.filters._failureMode):'';
+  const fmFilterLabel=requestedFM?cfmLabel(requestedFM):'';
   const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
   const am=data.length>0?data.reduce((s,r)=>s+(r.mileage||0),0)/data.length:0;
-  let h=`<p><b>Customer Failure Mode Analysis — ${esc(pn)}</b>${fmFilter?' | '+esc(fmFilter):''} | ${dsl()}</p>`;
-  h+=mkKPIs([['Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['With [C] Comments',fN(withCC.length),'var(--gn)',pc(withCC.length,data.length)],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--pu)']]);
+  let h=`<p><b>Customer Failure Mode Analysis — ${esc(pn)}</b>${fmFilterLabel?' | Focus: '+esc(fmFilterLabel):''} | ${dsl()}</p>`;
+  h+=mkKPIs([['Total Claims',fN(data.length),'var(--ac)',`of ${fN(gDS().length)}`],['With [C] Comments',fN(withCC.length),'var(--gn)',pc(withCC.length,data.length)],['Total Cost',f$(tc),'var(--or)',`avg ${f$(tc/data.length)}`],['Avg Mileage',fN(am)+' km','var(--pu)']]);
+  // Focused failure mode highlight — when a specific mode was requested
+  if(requestedFM){
+    const fmData=data.filter(r=>r._failureMode===requestedFM);
+    const fmCC=fmData.filter(r=>r._custComment);
+    const fmCost=fmData.reduce((s,r)=>s+(r.totalCost||0),0);
+    const months=fmData.map(r=>r.confMonth).filter(Boolean);
+    const period=months.length?[...new Set(months)].sort():[];
+    const periodStr=period.length>=2?period[0]+' → '+period[period.length-1]:period.length===1?period[0]:'—';
+    h+=`<div class="cb" style="border-left:3px solid var(--yl);background:rgba(251,191,36,.06)">`;
+    h+=`<div class="ct" style="color:var(--yl)">🎯 Focus: ${esc(cfmLabel(requestedFM))} — ${esc(pn)}</div>`;
+    h+=mkKPIs([
+      ['Mode Claims',fN(fmCC.length),'var(--yl)',fmCC.length>0?pc(fmCC.length,withCC.length)+' of commented':'0 classified'],
+      ['Mode Cost',f$(fmCost),'var(--or)',fmCost>0?'avg '+f$(fmCost/fmData.length):'—'],
+      ['Period',periodStr,'var(--cy)',fmData.length+' records'],
+      ['All Claims',fN(data.length),'var(--ac)',`100% baseline`]
+    ]);
+    if(fmCC.length>0){
+      // Show sample comments for this specific mode
+      const samples=fmCC.slice(0,4);
+      h+=`<div style="margin-top:8px">`;
+      samples.forEach(r=>{
+        const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
+        h+=`<div style="border-left:3px solid var(--yl);padding:4px 10px;margin:3px 0;font-size:11px;color:var(--tx2);border-radius:0 4px 4px 0">"${esc(tr(r._custComment,180))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+      });
+      h+='</div>';
+    } else {
+      h+=`<p style="color:var(--tx3);font-size:11px;margin-top:6px">No claims classified as "${esc(cfmLabel(requestedFM))}" for ${esc(pn)}. See the full breakdown below for actual failure modes.</p>`;
+    }
+    h+='</div>';
+  }
   // Main failure mode summary bar chart
   h+=failureModeSummary(data);
   // Subcategory breakdown bar chart
@@ -2154,13 +2190,15 @@ function genFailureMode(I){
   if(data.length>5&&data[0].mileage!==undefined)h+=mkScatter(data,'Mileage vs Cost');
   // Sample customer comments as evidence
   if(withCC.length>0){
-    const samples=withCC.slice(0,6);
-    h+=`<div class="cb"><div class="ct">Sample Customer Comments [C] / Comentarios del Cliente</div>`;
-    samples.forEach(r=>{
-      const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
-      h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
-    });
-    h+='</div>';
+    const samples=requestedFM?withCC.filter(r=>r._failureMode!==requestedFM).slice(0,4):withCC.slice(0,6);
+    if(samples.length){
+      h+=`<div class="cb"><div class="ct">${requestedFM?'Other':'Sample'} Customer Comments [C] / Comentarios del Cliente</div>`;
+      samples.forEach(r=>{
+        const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
+        h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+      });
+      h+='</div>';
+    }
   }
   h+=autoMarketMap(I,data);
   h+=srcTag(data.length,'claims · '+fN(withCC.length)+' customer comments');
