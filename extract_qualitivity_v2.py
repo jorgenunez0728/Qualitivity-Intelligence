@@ -46,7 +46,7 @@ KEY_MAP = {
 }
 
 # Extended columns only in DC/12M (beyond standard 93)
-EXT_MAP_DC = {96: 'status'}          # 'Include' / 'Not Include'
+EXT_MAP_DC = {92: 'retailSalesMonth', 95: 'resultMonth', 96: 'status'}
 EXT_MAP_12M = {96: 'status', 192: 'resultMonth'}  # '1'/'Today', monthly name
 
 
@@ -131,12 +131,34 @@ def extract_sales_by_state(wb):
     return dict(sales)
 
 
+def extract_monthly_sales(wb):
+    """Extract monthly vehicle sales from DB Sales (DC) sheet."""
+    if 'DB Sales (DC)' not in wb.sheetnames:
+        return {}
+    ws = wb['DB Sales (DC)']
+    rows = list(ws.iter_rows(values_only=True))
+    monthly = Counter()
+    for row in rows[1:]:
+        vals = list(row)
+        if vals[0] is None:
+            continue
+        rsd = vals[22]  # Retail sales date
+        m = None
+        if isinstance(rsd, str) and len(rsd) >= 7:
+            m = rsd[:7]
+        elif isinstance(rsd, (datetime, date)):
+            m = rsd.strftime('%Y-%m')
+        if m:
+            monthly[m] += 1
+    return dict(monthly)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python extract_qualitivity.py <file1.xlsm> [file2.xlsm]", file=sys.stderr)
         sys.exit(1)
-    
-    result = {'3M': [], 'DC': [], '12M': [], 'sales_by_state': {}}
+
+    result = {'3M': [], 'DC': [], '12M': [], 'sales_by_state': {}, 'monthly_sales': {}}
     
     for filepath in sys.argv[1:]:
         print(f"Processing: {filepath}", file=sys.stderr)
@@ -150,9 +172,9 @@ def main():
             
             elif sheet == 'RO (DC)':
                 recs, skip = extract_sheet(wb, sheet, include_comment=True,
-                                          ext_map=EXT_MAP_DC, status_filter='Include')
+                                          ext_map=EXT_MAP_DC)
                 result['DC'] = recs
-                print(f"  DC: {len(recs)} records (filtered, skipped {skip} Not Include)", file=sys.stderr)
+                print(f"  DC: {len(recs)} records (all statuses, no filter)", file=sys.stderr)
             
             elif sheet == 'RO (12M)':
                 recs, skip = extract_sheet(wb, sheet, include_comment=False,
@@ -162,7 +184,9 @@ def main():
             
             elif sheet == 'DB Sales (DC)':
                 result['sales_by_state'] = extract_sales_by_state(wb)
-                print(f"  Sales: {sum(result['sales_by_state'].values())} across {len(result['sales_by_state'])} states", file=sys.stderr)
+                result['monthly_sales'] = extract_monthly_sales(wb)
+                print(f"  Sales by state: {sum(result['sales_by_state'].values())} across {len(result['sales_by_state'])} states", file=sys.stderr)
+                print(f"  Monthly sales: {dict(sorted(result['monthly_sales'].items()))}", file=sys.stderr)
         
         wb.close()
     
