@@ -1145,7 +1145,7 @@ function mkParseBar(I,dataLen){
   if(I._confidence)tags.push(`<span class="pt pc" data-tip="Parser confidence score (higher = more certain)">conf:${I._confidence}</span>`);
   if(I._followUp)tags.push(`<span class="pt pc" data-tip="Modified from previous query">↩ follow-up</span>`);
   if(I._fuzzyMatch)tags.push(`<span class="pt pc" data-tip="Part name matched approximately from data index">≈ fuzzy: ${I._fuzzyMatch}</span>`);
-  return`<div class="pb" style="cursor:pointer;max-height:18px;overflow:hidden;transition:max-height .3s ease" onclick="this.style.maxHeight=this.style.maxHeight==='18px'?'none':'18px'" title="Click to expand query details"><span style="color:var(--ac)">▸</span> ${I.type} · ${fN(dataLen)} claims <span style="opacity:.5">· click for details</span><div style="margin-top:4px">${tags.join(' · ')}</div></div>`;
+  return`<div class="pb">${tags.join(' · ')}</div>`;
 }
 
 // ===== NLP PARSER =====
@@ -4026,7 +4026,7 @@ function proc(q){
   }
   function _wrap(html){
     const skipSuggest=/whatif|sankey|dealerscore|presentation|export|vizstudio|dashbuilder|snapshots/.test(I.type);
-    const addNarrative=/ranking|analysis|summary|comparison|pareto|donut/.test(I.type)&&_data.length>=10;
+    const addNarrative=/ranking|analysis|summary|comparison|pareto|donut|failuremode/.test(I.type)&&_data.length>=10;
     let out=_pb+_disambig+html;
     if(addNarrative&&!out.includes('Executive Summary'))out+=narrate(_data);
     if(!skipSuggest&&!out.includes('Next:'))out+=suggest(I,_data);
@@ -4082,7 +4082,7 @@ const inp=document.getElementById('inp');
 function addM(c,u){const d=document.createElement('div');d.className=`m ${u?'u':'b'}`;if(u)d.textContent=c;else d.innerHTML=c;ch.appendChild(d);if(u){ch.scrollTop=ch.scrollHeight;}else{setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'start'});},80);setTimeout(animKPIs,60);}}
 function showT(){const d=document.createElement('div');d.className='m b';d.id='typ';d.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';ch.appendChild(d);ch.scrollTop=ch.scrollHeight;}
 function hideT(){const e=document.getElementById('typ');if(e)e.remove();}
-function send(){const q=inp.value.trim();if(!q)return;const drop=document.getElementById('acDrop');if(drop)drop.style.display='none';_acIdx=-1;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();addM(proc(q),false);},250+Math.random()*350);}
+function send(){const q=inp.value.trim();if(!q)return;const drop=document.getElementById('acDrop');if(drop)drop.style.display='none';_acIdx=-1;addM(q,true);inp.value='';inp.style.height='auto';addToHistory(q);showT();setTimeout(()=>{hideT();try{addM(proc(q),false);}catch(e){addM('<p style="color:var(--rd)">Error: '+e.message+'</p>',false);console.error('proc error:',e);}},250+Math.random()*350);}
 inp.addEventListener('keydown',e=>{
   const drop=document.getElementById('acDrop');
   const acVisible=drop&&drop.style.display==='block';
