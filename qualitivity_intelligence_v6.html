@@ -6,7 +6,7 @@
 <title>Qualitivity Intelligence v7 — KMX QA</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#06090f;--sf:#0d1219;--sf2:#141c28;--sf3:#1a2536;--bd:#1e2d44;--bd2:#283a54;--tx:#e8edf5;--tx2:#8896ab;--tx3:#5a6a80;--ac:#38bdf8;--acd:rgba(56,189,248,.12);--pu:#a78bfa;--gn:#34d399;--rd:#f87171;--or:#fb923c;--yl:#fbbf24;--pk:#f472b6;--cy:#22d3ee}
+:root{--bg:#06090f;--sf:#0d1219;--sf2:#141c28;--sf3:#1a2536;--bd:#1e2d44;--bd2:#283a54;--tx:#e8edf5;--tx2:#8896ab;--tx3:#6b7d95;--ac:#38bdf8;--acd:rgba(56,189,248,.12);--pu:#a78bfa;--gn:#34d399;--rd:#f87171;--or:#fb923c;--yl:#fbbf24;--pk:#f472b6;--cy:#22d3ee}
 *{margin:0;padding:0;box-sizing:border-box}html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0}
@@ -44,7 +44,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .bv{width:60px;font:13px 'JetBrains Mono',monospace;color:var(--tx);flex-shrink:0;text-align:right}
 .bp{font-size:10.5px;color:var(--tx2);width:40px;flex-shrink:0}
 .hmg{display:grid;gap:2px;margin:8px 0}
-.hmc{display:flex;align-items:center;justify-content:center;font:600 10px 'JetBrains Mono',monospace;border-radius:4px;min-height:28px;transition:transform .15s;cursor:default}
+.hmc{display:flex;align-items:center;justify-content:center;font:600 11px 'JetBrains Mono',monospace;border-radius:4px;min-height:30px;transition:transform .15s;cursor:default}
 .hmc:hover{transform:scale(1.08);z-index:2}
 .hmh{font-size:10px;color:var(--tx2);font-weight:600;text-align:center;padding:4px 2px;overflow:hidden;text-overflow:ellipsis}
 .dc{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
@@ -154,7 +154,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .wkc .wkl{font:10px 'DM Sans',sans-serif;color:var(--tx3);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
 /* Utility classes for repeated inline styles */
 .mono{font-family:'JetBrains Mono',monospace}
-.comment-box{background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0;line-height:1.4}
+.comment-box{background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:12px;color:var(--tx2);border-radius:0 6px 6px 0;line-height:1.4}
 .comment-box.accent{border-left-color:var(--ac)}
 .txt-muted{font-size:11px;color:var(--tx2)}
 .txt-dim{font-size:10px;color:var(--tx3)}
@@ -330,6 +330,36 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .kc{border:1px solid #ccc!important;background:#f8f8f8!important}
   .kcv,.ct{color:#333!important}
 }
+/* === PRESENTATION MODE === */
+body.pres .m.b{font-size:16px;line-height:1.7}
+body.pres .m.u{font-size:16px}
+body.pres .cb .ct{font-size:14px}
+body.pres .br{font-size:15px;margin:5px 0}
+body.pres .bl{font-size:14px}
+body.pres .bt{height:26px}
+body.pres .bv{font-size:15px}
+body.pres .bp{font-size:12px}
+body.pres .kc .kcv{font-size:22px}
+body.pres .kc .kcl{font-size:11px}
+body.pres .kc .kcs{font-size:11px}
+body.pres .kp .kv{font-size:22px}
+body.pres .kp .kl{font-size:11px}
+body.pres .kp .ks{font-size:11px}
+body.pres .hmc{font-size:12px;min-height:34px}
+body.pres .hmh{font-size:11px}
+body.pres .di{font-size:14px}
+body.pres .m table{font-size:14px}
+body.pres .m th{font-size:13px}
+body.pres .pb{font-size:12px}
+body.pres .st{font-size:11px}
+body.pres .ir textarea{font-size:16px}
+body.pres .cp{font-size:14px;padding:10px 20px}
+body.pres .dt{font-size:12px;padding:5px 14px}
+body.pres .pill{font-size:12px}
+body.pres .cb{padding:18px;margin:12px 0}
+body.pres .comment-box{font-size:13px!important}
+body.pres-btn{transition:all .2s}
+body.pres .pres-btn{background:var(--acd)!important;border-color:var(--ac)!important;color:var(--ac)!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
@@ -353,6 +383,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <button class="pill" onclick="toggleLang()" id="langBtn" style="cursor:pointer;background:var(--sf2)" title="Toggle language">🌐 EN</button>
 <button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button>
 <button class="pill" onclick="showShareModal()" style="cursor:pointer;background:var(--sf2)" title="Share / Compartir">📤</button>
+<button class="pill pres-btn" id="presBtn" onclick="togglePres()" style="cursor:pointer;background:var(--sf2)" title="Presentation Mode / Modo Presentación (Ctrl+Shift+P)">📽️</button>
 <button class="pill" onclick="startTour()" style="cursor:pointer;background:var(--sf2);font-weight:700" title="Guided Tour / Recorrido guiado">?</button>
 </div>
 </header>
@@ -1444,7 +1475,7 @@ function mkDonut(items,title){
     svg+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${C[i%C.length]}" stroke-width="16" stroke-dasharray="${len} ${CIRC-len}" stroke-dashoffset="${-offset}" opacity=".85" style="transform:rotate(-90deg);transform-origin:center;animation:sweepIn .8s cubic-bezier(.25,.8,.25,1) ${i*0.1}s both;--sl:${CIRC}"/>`;
     offset+=len;
   });
-  svg+=`<circle cx="${CX}" cy="${CY}" r="28" fill="var(--sf2)"/><text x="${CX}" y="58" text-anchor="middle" fill="var(--tx)" font-size="14" font-weight="700" font-family="JetBrains Mono">${fN(tot)}</text><text x="${CX}" y="70" text-anchor="middle" fill="var(--tx3)" font-size="7">claims</text></svg>`;
+  svg+=`<circle cx="${CX}" cy="${CY}" r="28" fill="var(--sf2)"/><text x="${CX}" y="58" text-anchor="middle" fill="var(--tx)" font-size="16" font-weight="700" font-family="JetBrains Mono">${fN(tot)}</text><text x="${CX}" y="72" text-anchor="middle" fill="var(--tx3)" font-size="9">claims</text></svg>`;
   let lg='<div class="dl">';
   t8.forEach((it,i)=>lg+=`<div class="di"><div class="dd" style="background:${C[i%C.length]}"></div>${esc(tr(it.key,25))} <span style="color:var(--tx3);font:10px 'JetBrains Mono',monospace">${it.value} (${pc(it.value,tot)})</span></div>`);
   lg+='</div>';
@@ -1460,14 +1491,18 @@ function mkScatter(data,title){
   let h=`<div class="cb"><div class="ct">${esc(title)}</div><div class="scatter-wrap" style="width:100%;height:${H+40}px;position:relative">`;
   h+=`<div style="position:absolute;bottom:0;left:50px;right:10px;height:1px;background:var(--bd)"></div>`;
   h+=`<div style="position:absolute;bottom:0;left:50px;width:1px;top:10px;background:var(--bd)"></div>`;
-  h+=`<div style="position:absolute;bottom:-16px;left:50%;font-size:9px;color:var(--tx3)">Mileage (km)</div>`;
-  h+=`<div style="position:absolute;left:2px;top:50%;transform:rotate(-90deg);font-size:9px;color:var(--tx3)">Cost</div>`;
-  sub.forEach(r=>{
+  h+=`<div style="position:absolute;bottom:-16px;left:50%;font-size:10px;color:var(--tx3)">Mileage (km)</div>`;
+  h+=`<div style="position:absolute;left:2px;top:50%;transform:rotate(-90deg);font-size:10px;color:var(--tx3)">Cost (USD)</div>`;
+  // X-axis tick labels (mileage)
+  for(let i=0;i<=4;i++){const v=Math.round(mxM*i/4);const x=50+(i/4)*450;h+=`<div style="position:absolute;bottom:-12px;left:${x}px;transform:translateX(-50%);font:9px 'JetBrains Mono',monospace;color:var(--tx3)">${v>=1000?Math.round(v/1000)+'k':v}</div>`;}
+  // Y-axis tick labels (cost)
+  for(let i=1;i<=4;i++){const v=Math.round(mxC*i/4);const y=H-((i/4)*(H-20));h+=`<div style="position:absolute;left:0;top:${y-5}px;font:9px 'JetBrains Mono',monospace;color:var(--tx3);text-align:right;width:46px">${v>=1000?'$'+Math.round(v/1000)+'k':'$'+v}</div>`;}
+  sub.forEach((r,idx)=>{
     const x=50+((r.mileage||0)/mxM)*450;const y=H-((r.totalCost||0)/mxC)*(H-20);
-    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:7px;height:7px;background:${pc2[r.proj]||'#fb923c'};animation-delay:${(sub.indexOf(r)*0.008).toFixed(3)}s" title="${r.partNM||''} | ${r.proj||''} | ${fN(r.mileage)}km | ${f$(r.totalCost)}"></div>`;
+    h+=`<div class="scatter-dot" style="left:${x}px;top:${y}px;width:7px;height:7px;background:${pc2[r.proj]||'#fb923c'};animation-delay:${(idx*0.008).toFixed(3)}s" title="${r.partNM||''} | ${r.proj||''} | ${fN(r.mileage)}km | ${f$(r.totalCost)}"></div>`;
   });
   h+=`<div style="position:absolute;top:4px;right:8px;display:flex;gap:10px">`;
-  for(const[k,c]of Object.entries(pc2))h+=`<span style="font-size:9px;color:${c}">● ${k}</span>`;
+  for(const[k,c]of Object.entries(pc2))h+=`<span style="font-size:10px;color:${c}">● ${k}</span>`;
   h+='</div></div></div>';return h;
 }
 
@@ -2012,7 +2047,7 @@ function failureModeSummary(data){
       h+='<div style="margin:-2px 0 4px 16px;display:flex;flex-wrap:wrap;gap:3px">';
       subs.forEach(s=>{
         const sl=cfmSubLabel(s.sub);
-        h+=`<span onclick="inp.value='${esc(sl)} comments';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:1px 6px;border-radius:8px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace" title="Click to see all customer comments">${esc(sl)} <b style="color:var(--tx2)">${s.count}</b></span>`;
+        h+=`<span onclick="inp.value='${esc(sl)} comments';send()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);padding:2px 8px;border-radius:8px;font-size:10.5px;cursor:pointer;font-family:'JetBrains Mono',monospace" title="Click to see all customer comments">${esc(sl)} <b style="color:var(--tx2)">${s.count}</b></span>`;
       });
       h+='</div>';
     }
@@ -2152,7 +2187,7 @@ function genFailureMode(I){
       h+=`<div style="margin-top:8px">`;
       samples.forEach(r=>{
         const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
-        h+=`<div style="border-left:3px solid var(--yl);padding:4px 10px;margin:3px 0;font-size:11px;color:var(--tx2);border-radius:0 4px 4px 0">"${esc(tr(r._custComment,180))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+        h+=`<div style="border-left:3px solid var(--yl);padding:5px 10px;margin:3px 0;font-size:12px;color:var(--tx2);border-radius:0 4px 4px 0">"${esc(tr(r._custComment,180))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
       });
       h+='</div>';
     } else {
@@ -2195,7 +2230,7 @@ function genFailureMode(I){
       h+=`<div class="cb"><div class="ct">${requestedFM?'Other':'Sample'} Customer Comments [C] / Comentarios del Cliente</div>`;
       samples.forEach(r=>{
         const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
-        h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+        h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:6px 10px;margin:4px 0;font-size:12px;color:var(--tx2);border-radius:0 6px 6px 0">"${esc(tr(r._custComment,200))}" <span style="color:var(--tx3)">— ${esc(fmTag)} | ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
       });
       h+='</div>';
     }
@@ -2219,7 +2254,7 @@ function mkTrendSVG(pts,title,isCost){
   for(let i=0;i<=4;i++){
     const y=H-25-i/4*(H-50);
     svg+=`<line x1="${pad}" y1="${y}" x2="${W-10}" y2="${y}" stroke="var(--bd)" stroke-width=".5"/>`;
-    svg+=`<text x="${pad-4}" y="${y+3}" fill="var(--tx3)" font-size="9" text-anchor="end" font-family="JetBrains Mono">${isCost?'$'+Math.round(mxY*i/4/1000)+'k':Math.round(mxY*i/4)}</text>`;
+    svg+=`<text x="${pad-4}" y="${y+3}" fill="var(--tx3)" font-size="9" text-anchor="end" font-family="JetBrains Mono">${isCost?(mxY*i/4>=1000?'$'+Math.round(mxY*i/4/1000)+'k':'$'+Math.round(mxY*i/4)):Math.round(mxY*i/4)}</text>`;
   }
   pts.forEach((p,i)=>{
     const x=xScale(i);const bh=(p.y/mxY)*(H-50);
@@ -2283,7 +2318,7 @@ function genSummary(I){
 }
 
 function genComparison(I){
-  const prjs=['CL4','NX4M','BL7M'];const all=gDS();
+  const prjs=[...new Set(gDS().map(r=>r.proj))].filter(Boolean);const all=gDS();
   let h=`<p><b>Project Comparison</b> — ${dsl()}</p>`;
   const rows=prjs.map(p=>{const d=flt(all,{...I.filters,proj:p});const tc=d.reduce((s,r)=>s+(r.totalCost||0),0);const tp=ag(d,'partNM','count')[0];const tn=ag(d,'natName','count')[0];
   return{proj:p,claims:d.length,cost:tc,avgC:d.length?tc/d.length:0,avgM:d.length?d.reduce((s,r)=>s+(r.mileage||0),0)/d.length:0,topPart:tp?tp.key+' ('+tp.count+')':'—',topNat:tn?tn.key+' ('+tn.count+')':'—'};});
@@ -2387,9 +2422,10 @@ function genHeatmap(I){
 }
 
 function genDetail(I){
-  const data=flt(gDS(),I.filters).slice(0,30);
+  const allData=flt(gDS(),I.filters);
+  const data=allData.slice(0,30);
   if(!data.length)return'<p>No claims found.</p>';
-  let h=`<p><b>Claim Details</b> (${data.length} records)</p>`;
+  let h=`<p><b>Claim Details</b> — Showing ${data.length} of ${fN(allData.length)} claims${allData.length>30?' (top 30)':''}</p>`;
   h+=mkTbl(data,[{l:'VIN',k:'vin',f:v=>v?'…'+String(v).slice(-6):''},{l:'Project',k:'proj',f:v=>esc(v||'')},{l:'Part',k:'partNM',f:v=>esc(tr(v,22))},{l:'Cause',k:'causeCode',f:v=>v?`<span style="font-family:'JetBrains Mono',monospace;color:var(--yl)">${esc(v)}</span>`:''},{l:'Nature',k:'natName',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'},{l:'Cost',k:'totalCost',f:v=>f$(v)}]);
   return h;
 }
@@ -3450,7 +3486,7 @@ function genExecReport(I){
   h+=mkBar(ag(all,'partNM','count').slice(0,10),'count','Top 10 Parts by Claims');
   h+=mkBar(ag(all,'partNM','cost').slice(0,10),'cost','Top 10 Parts by Cost');
   // By project
-  const prjs=['CL4','NX4M','BL7M'];
+  const prjs=[...new Set(all.map(r=>r.proj))].filter(Boolean);
   const rows=prjs.map(p=>{const d=all.filter(r=>r.proj===p);const tc2=d.reduce((s,r)=>s+(r.totalCost||0),0);
     return{proj:p,claims:d.length,cost:tc2,avgC:d.length?tc2/d.length:0};});
   h+=mkTbl(rows,[{l:'Project',k:'proj',f:v=>`<b>${v}</b>`},{l:'Claims',k:'claims',f:v=>fN(v)},{l:'Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)}]);
@@ -4434,9 +4470,12 @@ function init(){
       setTimeout(()=>startTour(),600);
     }
   });
+  // Restore presentation mode
+  if(localStorage.getItem('qi_pres')==='1')document.body.classList.add('pres');
   // Setup keyboard shortcuts
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();showCmdPal();}
+    if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='P'){e.preventDefault();togglePres();}
   });
 }
 
@@ -4877,6 +4916,7 @@ const UI_STRINGS={
   ko:{insights:'인텔리전스 브리핑',alerts:'조기 경보 스파이크 감지',forecast:'보증 비용 예측',dashboard:'요약 대시보드 개요',welcome:'질문을 입력하거나 아래 칩을 클릭하세요',noData:'클레임을 찾을 수 없습니다.',import:'가져오기',saved:'저장됨',history:'기록',export:'내보내기'}
 };
 
+function togglePres(){document.body.classList.toggle('pres');localStorage.setItem('qi_pres',document.body.classList.contains('pres')?'1':'0');}
 function toggleLang(){
   const langs=['en','es','ko'];
   const idx=langs.indexOf(_uiLang);
