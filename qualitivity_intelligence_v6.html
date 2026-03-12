@@ -358,6 +358,11 @@ body.pres .dt{font-size:12px;padding:5px 14px}
 body.pres .pill{font-size:12px}
 body.pres .cb{padding:18px;margin:12px 0}
 body.pres .comment-box{font-size:13px!important}
+body.pres .m.b p{margin-bottom:10px}
+body.pres .cb{margin:16px 0;padding:20px}
+body.pres .kg{gap:12px}
+body.pres blockquote{font-size:15px;padding:18px 22px;line-height:1.9}
+body.pres .br{margin:6px 0}
 body.pres-btn{transition:all .2s}
 body.pres .pres-btn{background:var(--acd)!important;border-color:var(--ac)!important;color:var(--ac)!important}
 </style>
@@ -370,8 +375,8 @@ body.pres .pres-btn{background:var(--acd)!important;border-color:var(--ac)!impor
 <div class="splash-diamond">◆</div>
 <div class="splash-title">Qualitivity Intelligence</div>
 <div class="splash-line"></div>
-<div class="splash-sub">Warranty Analytics Platform · KIA México</div>
-<div class="splash-ver">v7 NLP² · Powered by Data Intelligence</div>
+<div class="splash-sub">Quality Intelligence & Cost Analytics · KIA México</div>
+<div class="splash-ver">Real-Time Warranty Analysis · 11,000+ Claims · NLP-Powered</div>
 </div>
 <header class="hdr">
 <div class="hdr-l"><div class="logo">Qi</div><div class="hdr-t">Qualitivity <span>Intelligence</span></div></div>
@@ -1140,7 +1145,7 @@ function mkParseBar(I,dataLen){
   if(I._confidence)tags.push(`<span class="pt pc" data-tip="Parser confidence score (higher = more certain)">conf:${I._confidence}</span>`);
   if(I._followUp)tags.push(`<span class="pt pc" data-tip="Modified from previous query">↩ follow-up</span>`);
   if(I._fuzzyMatch)tags.push(`<span class="pt pc" data-tip="Part name matched approximately from data index">≈ fuzzy: ${I._fuzzyMatch}</span>`);
-  return`<div class="pb">🔍 ${tags.join(' · ')}</div>`;
+  return`<div class="pb" style="cursor:pointer;max-height:18px;overflow:hidden;transition:max-height .3s ease" onclick="this.style.maxHeight=this.style.maxHeight==='18px'?'none':'18px'" title="Click to expand query details"><span style="color:var(--ac)">▸</span> ${I.type} · ${fN(dataLen)} claims <span style="opacity:.5">· click for details</span><div style="margin-top:4px">${tags.join(' · ')}</div></div>`;
 }
 
 // ===== NLP PARSER =====
@@ -3645,8 +3650,8 @@ function narrate(data,context){
   const earlyLife=data.filter(r=>(r.mileage||99999)<5000).length;
   const earlyPct=(earlyLife/data.length*100);
   // Build narrative
-  let txt=`<blockquote style="border-left:3px solid var(--ac);padding:10px 14px;margin:12px 0;background:var(--sf2);border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:var(--tx2)">`;
-  txt+=`<b>Executive Summary</b><br>`;
+  let txt=`<blockquote style="border-left:3px solid var(--ac);padding:14px 18px;margin:12px 0;background:var(--sf2);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.8;color:var(--tx2)">`;
+  txt+=`<div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:8px;letter-spacing:.02em">Executive Summary</div>`;
   txt+=`This dataset contains <b>${fN(data.length)}</b> warranty claims totaling <b>${f$(tc)}</b>`;
   if(context)txt+=` ${context}`;
   txt+=`. `;
@@ -3664,13 +3669,13 @@ function narrate(data,context){
   }
   if(earlyPct>20)txt+=`<span style="color:var(--rd)"><b>${earlyPct.toFixed(0)}%</b> of failures occur under 5,000km</span>, indicating potential manufacturing or assembly defect. `;
   if(topNation&&nations.length>1)txt+=`Geographically, <b>${esc(topNation.key)}</b> leads with <b>${fN(topNation.value)}</b> claims (${(topNation.value/data.length*100).toFixed(0)}%). `;
-  // Recommendation
-  txt+=`<br><br><b>Recommended Actions:</b><br>`;
-  if(topPartPct>25)txt+=`1. Immediate quality alert for ${esc(topPart?.key||'top part')} — convene supplier review<br>`;
-  else txt+=`1. Monitor ${esc(topPart?.key||'top part')} trend — set threshold alert at +20% MoM<br>`;
-  if(earlyPct>20)txt+=`2. Launch early-life failure investigation — audit assembly process<br>`;
-  else txt+=`2. Continue preventive monitoring of early-life failure rate (currently ${earlyPct.toFixed(0)}%)<br>`;
-  txt+=`3. Evaluate top-cost dealers for training and process improvement opportunities`;
+  // Recommended Actions with severity indicators
+  txt+=`<div style="font-size:14px;font-weight:700;color:var(--ac);margin:12px 0 8px;letter-spacing:.02em">Recommended Actions</div>`;
+  if(topPartPct>25)txt+=`<div style="margin:4px 0"><span style="background:var(--rd);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em">CRITICAL</span> Immediate quality alert for ${esc(topPart?.key||'top part')} — convene supplier review</div>`;
+  else txt+=`<div style="margin:4px 0"><span style="background:var(--yl);color:#000;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em">MONITOR</span> Track ${esc(topPart?.key||'top part')} trend — set threshold alert at +20% MoM</div>`;
+  if(earlyPct>20)txt+=`<div style="margin:4px 0"><span style="background:var(--rd);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em">CRITICAL</span> Launch early-life failure investigation — audit assembly process</div>`;
+  else txt+=`<div style="margin:4px 0"><span style="background:var(--gn);color:#000;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em">ON TRACK</span> Early-life failure rate at ${earlyPct.toFixed(0)}% — continue preventive monitoring</div>`;
+  txt+=`<div style="margin:4px 0"><span style="background:var(--yl);color:#000;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.03em">MONITOR</span> Evaluate top-cost dealers for training and process improvement</div>`;
   txt+=`</blockquote>`;
   return txt;
 }
@@ -4168,12 +4173,12 @@ document.getElementById('dst').addEventListener('click',e=>{if(e.target.classLis
 
 // ===== CHIPS =====
 const CHIPS=[
-{l:'HVAC claims in USA during January with avg temperature',q:'HVAC analysis USA January map temperature'},
-{l:'Full intelligence briefing with cost forecast',q:'Intelligence briefing'},
-{l:'Climate correlation: temperature vs claims in México by state',q:'Climate correlation analysis Mexico'},
-{l:'Customer failure modes for FOB key',q:'failure mode analysis fob key'},
-{l:'Battery customer failure modes by region',q:'failure mode analysis battery'},
-{l:'Map battery claims USA with temperature',q:'map battery USA temperature'},
+{l:'Executive intelligence briefing',q:'Intelligence briefing'},
+{l:'Top 10 defects driving warranty cost',q:'Top 10 parts by cost'},
+{l:'Customer failure modes: steering & alignment',q:'failure mode analysis steering'},
+{l:'Battery failure mode analysis by region',q:'failure mode analysis battery'},
+{l:'Compare projects: warranty performance',q:'Compare projects'},
+{l:'Early warning: quality spike alerts',q:'Alert spikes'},
 ];
 
 function mkChips(){const c=document.getElementById('cps');c.innerHTML='';CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
@@ -4459,8 +4464,8 @@ function init(){
   document.getElementById('pC').innerHTML=`Claims: <b>${fN(all.length)}</b>`;
   buildIdx(); // Level 2: build fuzzy entity index
   mkChips();
-  addM(`<p style="font-size:18px;margin-bottom:4px"><b>Qualitivity Intelligence</b></p>
-<p style="color:var(--tx2);font-size:13px">Qualitivity v6 · Data: Mar 2026 · ${fN(all.length)} claims</p>`,false);
+  addM(`<p style="font-size:17px;margin-bottom:6px"><b>Qualitivity Intelligence</b></p>
+<p style="color:var(--tx2);font-size:13.5px">Quality analytics for KIA warranty operations. Ask a question or select an analysis below.</p>`,false);
   // Hide loader, show splash, then focus
   document.getElementById('lo').style.display='none';
   showSplash(()=>{
