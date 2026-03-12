@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#06090f;--sf:#0d1219;--sf2:#141c28;--sf3:#1a2536;--bd:#1e2d44;--bd2:#283a54;--tx:#e8edf5;--tx2:#8896ab;--tx3:#5a6a80;--ac:#38bdf8;--acd:rgba(56,189,248,.12);--pu:#a78bfa;--gn:#34d399;--rd:#f87171;--or:#fb923c;--yl:#fbbf24;--pk:#f472b6;--cy:#22d3ee}
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box}html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0}
 .hdr-l{display:flex;align-items:center;gap:12px}
@@ -142,8 +142,137 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .wkc{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;min-width:100px;text-align:center;animation:kpop .5s cubic-bezier(.34,1.56,.64,1) both}
 .wkc .wkv{font:600 20px 'JetBrains Mono',monospace;color:var(--ac)}
 .wkc .wkl{font:10px 'DM Sans',sans-serif;color:var(--tx3);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
-@media(max-width:768px){.pills{display:none}.kstrip{display:none}.m{max-width:98%}.bl{width:110px;font-size:9px}.dst{display:none}.ir textarea{font-size:16px}}
-@media(max-width:480px){.cps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}.cp{white-space:nowrap;flex-shrink:0}}
+/* Utility classes for repeated inline styles */
+.mono{font-family:'JetBrains Mono',monospace}
+.comment-box{background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0;line-height:1.4}
+.comment-box.accent{border-left-color:var(--ac)}
+.txt-muted{font-size:11px;color:var(--tx2)}
+.txt-dim{font-size:10px;color:var(--tx3)}
+/* Responsive: Tablet (portrait iPad, small laptops) */
+@media(max-width:1024px){
+  .hdr{padding:10px 16px}
+  .chat{padding:14px 16px;gap:10px}
+  .ia{padding:10px 16px 12px}
+  .cps{padding:6px 16px 8px;gap:6px}
+  .cp{padding:6px 12px;font-size:11px}
+  .cb{padding:12px}
+  .bl{width:160px;font-size:12px}
+  .kg{gap:6px}
+  .kc{padding:6px 10px;min-width:80px}
+  .kc .kcv{font-size:16px}
+  .wkc{padding:8px 12px;min-width:80px}
+  .wkc .wkv{font-size:17px}
+  .tour-tip{max-width:300px;padding:14px 18px}
+}
+/* Responsive: Phone landscape / small tablet */
+@media(max-width:768px){
+  .pills{display:none}
+  .kstrip{display:none}
+  .dst{display:none}
+  .hdr{padding:8px 12px}
+  .hdr-t{font-size:13px}
+  .logo{width:32px;height:32px;font-size:12px;border-radius:8px}
+  .m{max-width:98%}
+  .m.b{padding:10px 12px;font-size:12.5px}
+  .chat{padding:10px 12px;gap:8px}
+  .bl{width:110px;font-size:9px}
+  .bv{width:50px;font-size:11px}
+  .ir textarea{font-size:16px}
+  .ia{padding:8px 12px 10px}
+  .cps{padding:6px 12px 8px;gap:5px}
+  .cp{padding:6px 10px;font-size:11px}
+  .cb{padding:10px;margin:6px 0;border-radius:8px}
+  .cb .ct{font-size:10px;margin-bottom:6px}
+  .kg{gap:4px}
+  .kc{padding:5px 8px;min-width:70px;border-radius:6px}
+  .kc .kcv{font-size:14px}
+  .kc .kcl{font-size:8px}
+  .wkpi{gap:6px}
+  .wkc{padding:6px 10px;min-width:70px;border-radius:8px}
+  .wkc .wkv{font-size:15px}
+  .m table{font-size:10.5px}
+  .m th{padding:4px 6px;font-size:9.5px}
+  .m td{padding:3px 6px}
+  .tw{max-height:250px}
+  .tour-tip{max-width:280px;padding:12px 16px}
+  .tour-tip h4{font-size:12px}
+  .tour-tip p{font-size:11px}
+  .cmd-pal{width:95%;max-width:400px}
+  .ac-drop{max-height:200px}
+  .hmg{gap:1px}
+  .hmc{min-height:24px;font-size:9px}
+  .scatter-dot{min-width:6px;min-height:6px}
+  .ins-row{padding:6px 10px;gap:8px}
+  .ins-txt{font-size:11px}
+  .comment-box{padding:5px 8px;font-size:10px}
+}
+/* Responsive: Phone portrait */
+@media(max-width:480px){
+  .hdr-l{gap:8px}
+  .logo{width:28px;height:28px;font-size:11px;border-radius:6px}
+  .hdr-t{font-size:12px}
+  .chat{padding:8px 8px;gap:6px}
+  .m{max-width:100%}
+  .m.b{padding:8px 10px;font-size:12px;line-height:1.5;border-radius:10px 10px 10px 2px}
+  .m.u{padding:8px 12px;font-size:12px;border-radius:10px 10px 2px 10px}
+  .ia{padding:6px 8px 8px}
+  .ir{gap:6px}
+  .ir textarea{min-height:38px;padding:8px 10px;border-radius:8px;font-size:16px}
+  .sb{width:38px;height:38px;border-radius:8px}
+  .sb svg{width:16px;height:16px}
+  .cps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 8px 6px;gap:4px;justify-content:flex-start}
+  .cp{white-space:nowrap;flex-shrink:0;padding:5px 10px;font-size:10px;border-radius:14px}
+  .cb{padding:8px;margin:4px 0;border-radius:6px}
+  .cb .ct{font-size:9px;margin-bottom:4px}
+  .bl{width:80px;font-size:8px}
+  .bt{height:16px}
+  .bv{width:44px;font-size:10px}
+  .bp{font-size:8px;width:28px}
+  .br{gap:4px;margin:2px 0;font-size:11px}
+  .kg{gap:3px;margin:4px 0}
+  .kc{padding:4px 6px;min-width:60px;border-radius:5px}
+  .kc .kcv{font-size:12px}
+  .kc .kcl{font-size:7px}
+  .kc .kcs{font-size:8px}
+  .wkpi{gap:4px;margin:8px 0 4px}
+  .wkc{padding:5px 8px;min-width:60px;border-radius:6px}
+  .wkc .wkv{font-size:13px}
+  .wkc .wkl{font-size:8px}
+  .m table{font-size:9.5px}
+  .m th{padding:3px 4px;font-size:8.5px}
+  .m td{padding:2px 4px}
+  .tw{max-height:200px}
+  .st{font-size:8px;padding:1px 6px}
+  .pb{font-size:9px;padding:3px 8px;gap:3px}
+  .hmg{gap:1px}
+  .hmc{min-height:20px;font-size:8px}
+  .hmh{font-size:7px;padding:2px 1px}
+  .map-container{max-width:100%}
+  .tour-tip{max-width:260px;padding:10px 14px;border-radius:10px}
+  .tour-tip h4{font-size:11px;margin-bottom:4px}
+  .tour-tip p{font-size:10px;line-height:1.4;margin-bottom:10px}
+  .tour-nav{gap:8px}
+  .tour-next{padding:6px 14px;font-size:10px}
+  .cmd-bg{padding-top:8vh}
+  .cmd-pal{width:96%;max-width:100%;border-radius:10px}
+  .cmd-inp{padding:10px 14px;font-size:13px}
+  .cmd-it{padding:7px 14px;font-size:12px}
+  .ac-drop{max-height:180px;border-radius:8px 8px 0 0}
+  .ac-item{padding:6px 10px;font-size:11px}
+  .ins-row{padding:5px 8px;gap:6px;margin:3px 0}
+  .ins-icon{font-size:14px}
+  .ins-txt{font-size:10px;line-height:1.4}
+  .ins-badge{font-size:8px;padding:1px 4px}
+  .comment-box{padding:4px 6px;font-size:9px;margin:3px 0}
+  .exp-btn{font-size:10px;padding:4px 10px}
+  .viz-bar{gap:3px;padding:4px}
+  .viz-btn{font-size:9px;padding:2px 8px}
+  .disambig{gap:4px;margin:4px 0}
+  .disambig button{padding:5px 10px;font-size:10px;border-radius:12px}
+  .splash-title{font-size:20px;letter-spacing:6px}
+  .splash-sub{font-size:10px;letter-spacing:2px}
+  .splash-diamond{font-size:38px}
+}
 /* v6: Insight rows */
 .ins-row{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-left:3px solid var(--bd);border-radius:0 8px 8px 0;margin:4px 0;background:var(--sf2);animation:mi .3s ease both}
 .ins-row.sev-red{border-left-color:var(--rd)}.ins-row.sev-or{border-left-color:var(--or)}.ins-row.sev-yl{border-left-color:var(--yl)}.ins-row.sev-gn{border-left-color:var(--gn)}
@@ -1204,7 +1333,7 @@ function mkHeat(data,rF,cF,title){
   if(!rows.length||!cols.length)return'';
   const grid={};let mx=0;
   for(const r of data){const rk=r[rF],ck=r[cF];if(!rk||!ck)continue;const k=rk+'||'+ck;grid[k]=(grid[k]||0)+(r.claims||1);if(grid[k]>mx)mx=grid[k];}
-  let h=`<div class="cb"><div class="ct">${esc(title)}</div><div class="hmg" style="grid-template-columns:140px repeat(${cols.length},1fr)">`;
+  let h=`<div class="cb"><div class="ct">${esc(title)}</div><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><div class="hmg" style="grid-template-columns:100px repeat(${cols.length},minmax(32px,1fr));min-width:${Math.max(300,cols.length*36+100)}px">`;
   h+='<div class="hmh"></div>';
   cols.forEach(c=>h+=`<div class="hmh">${esc(tr(_fmMap(c),12))}</div>`);
   rows.forEach(row=>{
@@ -1216,7 +1345,7 @@ function mkHeat(data,rF,cF,title){
       h+=`<div class="hmc" style="background:${bg};color:${fg};animation-delay:${(rows.indexOf(row)*0.03+cols.indexOf(col)*0.02).toFixed(2)}s" title="${esc(row)} × ${esc(col)}: ${v}">${v||''}</div>`;
     });
   });
-  h+='</div></div>';return h;
+  h+='</div></div></div>';return h;
 }
 
 function mkPareto(items,title){
@@ -1292,6 +1421,26 @@ function mkKPIs(pairs){
     h+=`<div class="kc kc-anim" style="animation-delay:${i*0.06}s"><div class="kcl">${esc(l)}</div><div class="kcv${isNum?' anim-kpi':''}" style="color:${c||'var(--ac)'}"${isNum?` data-target="${v}"`:``}>${isNum?'—':v}</div>${s?`<div class="kcs">${esc(s)}</div>`:''}</div>`;
   });
   h+='</div>';return h;
+}
+
+// ===== SHARED HELPERS FOR gen* FUNCTIONS =====
+// Source tag footer used by 18+ generators
+function srcTag(n,label){return`<span class="st">Qualitivity ${dsl()} · ${fN(n)} ${label||'claims'}</span>`;}
+// Comment highlight — wraps matching terms in <mark>
+function hlTerms(html,terms){
+  if(!terms||!terms.length)return html;
+  for(const t of terms){
+    html=html.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),
+      '<mark style="background:var(--ac);color:var(--bg);padding:0 2px;border-radius:2px">$1</mark>');
+  }
+  return html;
+}
+// Common metrics from data array
+function calcMetrics(data){
+  const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+  const am=data.length?data.reduce((s,r)=>s+(r.mileage||0),0)/data.length:0;
+  const au=data.length?data.reduce((s,r)=>s+(r.useP||0),0)/data.length:0;
+  return{tc,am,au,avg:data.length?tc/data.length:0};
 }
 
 // ===== TILE MAP BUILDER =====
@@ -1837,10 +1986,7 @@ function genRanking(I){
       h+=`<div class="cb"><div class="ct">Matching Dealer Comments / Comentarios Coincidentes</div>`;
       h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Comments matching: "${terms.join('" or "')}"</div>`;
       matchComments.forEach(r=>{
-        // Highlight matching terms in comment
-        let ct=esc(tr(r.comment,200));
-        for(const t of terms){ct=ct.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--ac);color:var(--bg);padding:0 2px;border-radius:2px">$1</mark>');}
-        h+=`<div style="background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${ct}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+        h+=`<div class="comment-box">"${hlTerms(esc(tr(r.comment,200)),terms)}" <span class="txt-dim">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
       });
       h+='</div>';
     }
@@ -1850,7 +1996,7 @@ function genRanking(I){
   h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more charts, switch grouping/metric:</p>`;
   h+=vizComboBar(data);
   h+=mkExpBtn(items,'Export Results');
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(tot)} claims</span>`;return h;
+  h+=srcTag(tot);return h;
 }
 
 function genAnalysis(I){
@@ -1876,9 +2022,7 @@ function genAnalysis(I){
       h+=`<div class="cb"><div class="ct">Matching Comments / Comentarios que Coinciden</div>`;
       h+=`<div style="font-size:10px;color:var(--tx3);margin-bottom:6px">${fN(matchComments.length)} comments matching: "${terms.join('" or "')}"</div>`;
       matchComments.forEach(r=>{
-        let ct=esc(tr(r.comment,250));
-        for(const t of terms){ct=ct.replace(new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--ac);color:var(--bg);padding:0 2px;border-radius:2px">$1</mark>');}
-        h+=`<div style="background:var(--sf2);border-left:3px solid var(--gn);padding:6px 10px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0">"${ct}" <span style="color:var(--tx3)">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
+        h+=`<div class="comment-box">"${hlTerms(esc(tr(r.comment,250)),terms)}" <span class="txt-dim">— ${r.proj} | ${r.nation} | ${fN(r.mileage)}km</span></div>`;
       });
       h+='</div>';
     }
@@ -1899,7 +2043,7 @@ function genAnalysis(I){
   const byD=ag(data,'devName','count').slice(0,5);
   if(byD.length)h+=`<p style="margin-top:8px"><b>Suppliers:</b> ${byD.map(d=>esc(tr(d.key,30))+' ('+d.count+')').join(' · ')}</p>`;
   h+=autoMarketMap(I,data);
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
+  h+=srcTag(data.length);return h;
 }
 
 function genFailureMode(I){
@@ -1951,7 +2095,7 @@ function genFailureMode(I){
     h+='</div>';
   }
   h+=autoMarketMap(I,data);
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims · ${fN(withCC.length)} customer comments</span>`;
+  h+=srcTag(data.length,'claims · '+fN(withCC.length)+' customer comments');
   return h;
 }
 
@@ -2005,7 +2149,7 @@ function genTrend(I){
   h+=mkTrendSVG(byCost.map(m=>({m:m.key,y:m.cost})),'Cost / Month (USD)',true);
   const prjs=[...new Set(data.map(r=>r.proj))].filter(Boolean);
   if(prjs.length>1)h+=mkHeat(data,'proj','confMonth','Project × Month');
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
+  h+=srcTag(data.length);return h;
 }
 
 function genSummary(I){
@@ -2114,7 +2258,7 @@ function genMap(I){
   _vizData=data;_vizFilters=filters;
   h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Add more views:</p>`;
   h+=vizComboBar(data);
-  h+='<span class="st">Qualitivity '+dsl()+' · '+fN(data.length)+' claims</span>';
+  h+=srcTag(data.length);
   return h;
 }
 
@@ -2133,7 +2277,7 @@ function genHeatmap(I){
   _vizData=data;_vizFilters=I.filters;
   h+=`<p style="margin-top:10px;font-size:11px;color:var(--tx2)"><b>🔧 Viz Studio</b> — Combine more views:</p>`;
   h+=vizComboBar(data);
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(data.length)} claims</span>`;return h;
+  h+=srcTag(data.length);return h;
 }
 
 function genDetail(I){
@@ -2171,7 +2315,7 @@ function genCfmComments(I){
   });
   h+='</tbody></table></div>';
   if(withCC.length>100)h+=`<p style="font-size:10px;color:var(--tx3)">Showing first 100 of ${fN(withCC.length)} comments.</p>`;
-  h+=`<span class="st">Qualitivity ${dsl()} · ${fN(withCC.length)} customer comments</span>`;
+  h+=srcTag(withCC.length,'customer comments');
   return h;
 }
 
@@ -2223,7 +2367,7 @@ function genVinDetail(I){
     h+=`<p style="font-size:11px;color:var(--tx2);margin:10px 0 4px"><b>Customer Comments [C]:</b></p>`;
     withCC.forEach(r=>{
       const fmTag=cfmFullLabel(r._failureMode,r._failureSub);
-      h+=`<div style="background:var(--sf2);border-left:3px solid var(--ac);padding:8px 12px;margin:4px 0;font-size:11px;color:var(--tx2);border-radius:0 6px 6px 0;line-height:1.4">"${esc(r._custComment)}" <div style="color:var(--tx3);margin-top:4px;font-size:10px">${esc(fmTag)} · ${esc(r.partNM||'')} · ${r.confMonth||''} · ${fN(r.mileage)} km · ${f$(r.totalCost)}</div></div>`;
+      h+=`<div class="comment-box accent">"${esc(r._custComment)}" <div class="txt-dim" style="margin-top:4px">${esc(fmTag)} · ${esc(r.partNM||'')} · ${r.confMonth||''} · ${fN(r.mileage)} km · ${f$(r.totalCost)}</div></div>`;
     });
   }
   // Full dealer comment (raw)
