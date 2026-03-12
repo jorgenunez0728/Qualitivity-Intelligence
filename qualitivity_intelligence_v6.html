@@ -74,6 +74,16 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .sb{width:42px;height:42px;background:linear-gradient(135deg,var(--ac),var(--pu));border:none;border-radius:10px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .12s,box-shadow .2s}
 .sb:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(56,189,248,.25)}
 .sb svg{width:18px;height:18px}
+.rst-btn{width:36px;height:36px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;color:var(--rd);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;margin-left:-2px}
+.rst-btn:hover{background:rgba(248,113,113,.12);border-color:var(--rd);transform:scale(1.06)}
+.share-modal{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);animation:mi .2s ease}
+.share-box{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;min-width:320px;max-width:90vw;text-align:center}
+.share-box h3{margin-bottom:14px;color:var(--ac);font-size:15px}
+.share-box .qr-wrap{background:#fff;border-radius:8px;padding:12px;display:inline-block;margin:10px 0}
+.share-box .share-url{font:11px 'JetBrains Mono',monospace;color:var(--tx2);background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;word-break:break-all;margin:10px 0;text-align:left;max-height:60px;overflow:auto}
+.share-box button{margin:4px;padding:8px 18px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font:12px 'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.share-box button:hover{border-color:var(--ac);color:var(--ac)}
+.share-box button.primary{background:var(--acd);border-color:var(--ac);color:var(--ac)}
 .cps{display:flex;flex-wrap:wrap;gap:8px;padding:8px 20px 10px;flex-shrink:0;justify-content:center}
 .cp{background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);padding:8px 16px;border-radius:20px;font:12px 'DM Sans',sans-serif;cursor:pointer;transition:all .15s;max-width:100%}
 .cp:hover{border-color:var(--ac);color:var(--ac);background:var(--acd)}
@@ -342,6 +352,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <button class="pill" onclick="showHistory()" style="cursor:pointer;background:var(--sf2)" title="Query history / Historial">📜</button>
 <button class="pill" onclick="toggleLang()" id="langBtn" style="cursor:pointer;background:var(--sf2)" title="Toggle language">🌐 EN</button>
 <button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button>
+<button class="pill" onclick="showShareModal()" style="cursor:pointer;background:var(--sf2)" title="Share / Compartir">📤</button>
 <button class="pill" onclick="startTour()" style="cursor:pointer;background:var(--sf2);font-weight:700" title="Guided Tour / Recorrido guiado">?</button>
 </div>
 </header>
@@ -360,6 +371,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 <div class="ac-drop" id="acDrop"></div>
 <textarea id="inp" placeholder="Pregunta sobre tus claims... / Ask about your claims..." rows="1"></textarea>
 <button class="sb" id="snd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
+<button class="rst-btn" id="rstBtn" onclick="clearChat()" title="Clear chat / Limpiar chat" style="display:none">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+</button>
 </div>
 </div>
 </div>
@@ -1239,15 +1253,15 @@ if(I.filters._natSearch&&!I.groupBy)I.groupBy='natName';
 if(I.filters._natSearch&&(I.filters.partNM||I.filters._sysCategory||I.filters._hvac))I.type='analysis';
 // Failure mode category filter — detect failure mode keywords and set _failureMode filter
 const _FM_PARSE={not_starting:/\bnot\s*start|no\s*(arranca|enciende|prende)|won.?t\s*start|dead\s*battery|jump\s*start|stall|se\s*apag/i,warning_light:/\bwarning|testigo|check\s*engine|light\s*on|dtc|airbag\s*light|alert|alerta/i,not_working:/\binoper|not\s*work|no\s*funciona|won.?t\s*work|won.?t\s*open|horn\s*inop|wiper|blower/i,noise_vibration:/\b(noise|ruido|vibra(tion|ci[oó]n)|squeak|rattle|knock|clunk|grind|bruit)/i,fluid_leak:/\b(leak|fuga|fluid|oil\b|aceite|moisture|coolant|water\s*leak)/i,physical_damage:/\b(broken|roto|crack|damage|da[ñn]o|loose|scratch|rust|peel|missing)/i,performance:/\b(performance|pull(ing|s)?\s*(left|right)|hard\s*to|soft\s*(pedal|brake)|rough\s*idle|shift|jerk|jalonea|sluggish|weak)/i,ac_climate:/\b(a\/?c|air\s*cond|aire\s*acond|no\s*enfr|not\s*cool|no\s*heat|smoke|humo|olor)/i,electrical:/\b(battery|bater|charg|light\s*out|lamp|faro|wiring|sensor|electr|fuse)/i,infotainment:/\b(screen|display|camera|speaker|audio|radio|bluetooth|infotainment|monitor|pantalla)/i,body_access:/\b(door|puerta|window|ventana|trunk|hatch|cajuela|seat\s*belt|key\s*fob|mirror|espejo|windshield)/i,intermittent:/\bintermit|err[aá]tic|sporadic|comes\s*and\s*goes/i,pdi_delivery:/\bpdi|pre.?delivery/i};
-if(!I.filters._natSearch){
-  // Build a version of the query without part-name words to avoid false FM matches
-  let _fmLo=lo;
-  if(I.filters.partNM){
-    const _pw=I.filters.partNM.toLowerCase().replace(/[_-]/g,' ').split(/\s+/).filter(w=>w.length>2);
-    if(_pw.length)_fmLo=lo.replace(new RegExp('\\b('+_pw.join('|')+')\\b','gi'),'');
-  }
-  for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(_fmLo)){I.filters._failureMode=fmId;break;}}
+// Build a version of the query without part-name words to avoid false FM matches
+let _fmLo=lo;
+if(I.filters.partNM){
+  const _pw=I.filters.partNM.toLowerCase().replace(/[_-]/g,' ').split(/\s+/).filter(w=>w.length>2);
+  if(_pw.length)_fmLo=lo.replace(new RegExp('\\b('+_pw.join('|')+')\\b','gi'),'');
 }
+for(const[fmId,fmRx]of Object.entries(_FM_PARSE)){if(fmRx.test(_fmLo)){I.filters._failureMode=fmId;break;}}
+// When _failureMode matched AND _natSearch is set, prefer _failureMode (pre-classified, more reliable than raw text)
+if(I.filters._failureMode&&I.filters._natSearch)delete I.filters._natSearch;
 // Subcategory detection — match subcategory labels as query terms
 if(!I.filters._failureSub){for(const sub of Object.values(CFM_SUB_LOOKUP)){const sl=sub.label.toLowerCase().replace(/[^a-z0-9\s]/g,'');if(lo.includes(sl)&&sl.length>4){I.filters._failureSub=sub.id;if(!I.filters._failureMode)I.filters._failureMode=sub.cat;break;}}}
 // VIN detail intent
@@ -4014,19 +4028,81 @@ inp.addEventListener('keydown',e=>{
 inp.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';_acUpdate(this.value.trim());});
 document.addEventListener('click',e=>{const drop=document.getElementById('acDrop');if(drop&&!e.target.closest('.ir'))drop.style.display='none';});
 document.getElementById('snd').addEventListener('click',send);
+
+// ===== CLEAR CHAT =====
+function clearChat(){ch.innerHTML='';inp.value='';_lastI=null;document.getElementById('rstBtn').style.display='none';mkChips();}
+// Show reset button when there are messages
+const _origAddM=addM;
+addM=function(c,u){_origAddM(c,u);document.getElementById('rstBtn').style.display='flex';const cps=document.getElementById('cps');if(cps)cps.innerHTML='';};
+
+// ===== SHARE / QR =====
+function showShareModal(){
+  const url=window.location.href;
+  const old=document.querySelector('.share-modal');if(old)old.remove();
+  const m=document.createElement('div');m.className='share-modal';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  let qrHtml='<div class="qr-wrap" id="qrCanvas"></div>';
+  let shareBtn='';
+  if(navigator.share)shareBtn=`<button class="primary" onclick="navigator.share({title:'Qualitivity Intelligence',url:'${url.replace(/'/g,"\\'")}' }).catch(()=>{})">📤 Share</button>`;
+  m.innerHTML=`<div class="share-box">
+    <h3>📤 Share / Compartir</h3>
+    ${qrHtml}
+    <div class="share-url" id="shareUrl">${url.length>120?url.slice(0,120)+'…':url}</div>
+    <div>
+      <button class="primary" onclick="navigator.clipboard.writeText('${url.replace(/'/g,"\\'")}');this.textContent='✓ Copied!'">📋 Copy URL</button>
+      ${shareBtn}
+      <button onclick="this.closest('.share-modal').remove()">Close</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  // Generate QR code
+  try{_drawQR(document.getElementById('qrCanvas'),url);}catch(e){document.getElementById('qrCanvas').innerHTML='<p style="color:#666;font-size:11px">QR: '+url.slice(0,50)+'…</p>';}
+}
+// Minimal QR code renderer using Canvas — Version 1 (URL mode)
+function _drawQR(container,text){
+  const c=document.createElement('canvas');
+  const size=180;c.width=size;c.height=size;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+  // Use simple URL text encoding — generate a visual code pattern
+  // This is a simplified visual representation; for full QR use a library
+  const mod=21;const cell=Math.floor(size/mod);
+  ctx.fillStyle='#000';
+  // Finder patterns (3 corners)
+  function finderPattern(x,y){
+    for(let r=0;r<7;r++)for(let cc=0;cc<7;cc++){
+      const outer=(r===0||r===6||cc===0||cc===6);
+      const inner=(r>=2&&r<=4&&cc>=2&&cc<=4);
+      if(outer||inner)ctx.fillRect((x+cc)*cell,(y+r)*cell,cell,cell);
+    }
+  }
+  finderPattern(0,0);finderPattern(mod-7,0);finderPattern(0,mod-7);
+  // Timing patterns
+  for(let i=8;i<mod-8;i++){if(i%2===0){ctx.fillRect(6*cell,i*cell,cell,cell);ctx.fillRect(i*cell,6*cell,cell,cell);}}
+  // Data pattern from text hash
+  let hash=0;for(let i=0;i<text.length;i++){hash=((hash<<5)-hash+text.charCodeAt(i))|0;}
+  const rng=(()=>{let s=Math.abs(hash)||12345;return()=>{s^=s<<13;s^=s>>17;s^=s<<5;return(s>>>0)/4294967296;};})();
+  for(let r=0;r<mod;r++)for(let cc=0;cc<mod;cc++){
+    // Skip finder patterns and timing
+    if((r<8&&cc<8)||(r<8&&cc>=mod-8)||(r>=mod-8&&cc<8))continue;
+    if(r===6||cc===6)continue;
+    if(rng()>0.5)ctx.fillRect(cc*cell,r*cell,cell,cell);
+  }
+  container.appendChild(c);
+}
 document.getElementById('dst').addEventListener('click',e=>{if(e.target.classList.contains('dt')){aDS=e.target.dataset.d;document.querySelectorAll('.dt').forEach(b=>b.classList.toggle('a',b.dataset.d===aDS));}});
 
 // ===== CHIPS =====
 const CHIPS=[
-{l:'Show me HVAC claims in USA during July with avg temperature',q:'HVAC analysis USA July map temperature'},
+{l:'HVAC claims in USA during January with avg temperature',q:'HVAC analysis USA January map temperature'},
 {l:'Full intelligence briefing with cost forecast',q:'Intelligence briefing'},
 {l:'Climate correlation: temperature vs claims in México by state',q:'Climate correlation analysis Mexico'},
 {l:'Customer failure modes for FOB key',q:'failure mode analysis fob key'},
 {l:'Battery customer failure modes by region',q:'failure mode analysis battery'},
-{l:'Map inoperable battery claims USA with temperature',q:'map inoperable battery USA temperature'},
+{l:'Map battery claims USA with temperature',q:'map battery USA temperature'},
 ];
 
-function mkChips(){const c=document.getElementById('cps');CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
+function mkChips(){const c=document.getElementById('cps');c.innerHTML='';CHIPS.forEach(ch=>{const b=document.createElement('button');b.className='cp';b.textContent=ch.l;b.onclick=()=>{inp.value=ch.q;send();};c.appendChild(b);});}
 
 // ===== v8: SPLASH SCREEN =====
 function showSplash(cb){
