@@ -21,8 +21,9 @@ def extract_records(wb, sheet_name, include_comment=True, max_cols=93, dc_filter
     """Extract claim records from a Qualitivity RO sheet.
 
     Args:
-        dc_filter: If True, read column 96 (Status) and only include rows where Status='Include'.
-                   Used for RO (DC) sheet to match official Qualitivity report numbers.
+        dc_filter: If True, only include rows that have a Retail Sales Date (col 91),
+                   and use Retail Sales Month (col 92) as confMonth instead of col 35.
+                   This matches the official Qualitivity DC PIVOT numbers exactly.
     """
     key_map = {
         0: 'no', 1: 'brand', 5: 'proj', 4: 'model',
@@ -36,8 +37,15 @@ def extract_records(wb, sheet_name, include_comment=True, max_cols=93, dc_filter
         57: 'devName', 60: 'faultCorp', 65: 'vin'
     }
 
-    # For DC sheets, we need to read up to column 97 (index 96 = Status)
-    read_cols = max(max_cols, 97) if dc_filter else max_cols
+    # Month name → number for converting Retail Sales Month to YYYY-MM
+    month_num = {
+        'January': '01', 'February': '02', 'March': '03', 'April': '04',
+        'May': '05', 'June': '06', 'July': '07', 'August': '08',
+        'September': '09', 'October': '10', 'November': '11', 'December': '12'
+    }
+
+    # For DC sheets, we need to read up to column 93 (col 91=Retail Sales Date, col 92=Retail Sales Month)
+    read_cols = max(max_cols, 93) if dc_filter else max_cols
 
     ws = wb[sheet_name]
     rows = list(ws.iter_rows(values_only=True))
@@ -49,10 +57,14 @@ def extract_records(wb, sheet_name, include_comment=True, max_cols=93, dc_filter
         if vals[0] is None:
             continue
 
-        # DC Status filter: column 96 must be 'Include'
+        # DC filter: only include rows where Retail Sales Date (col 91) is populated.
+        # The official Qualitivity PIVOT (DC) counts claims by Retail Sales Month,
+        # not by Confirm month. Rows without Retail Sales Date are pre-retail claims
+        # that don't count toward the DC KPI.
         if dc_filter:
-            status = vals[96] if len(vals) > 96 else None
-            if status != 'Include':
+            retail_date = vals[91] if len(vals) > 91 else None
+            retail_month = vals[92] if len(vals) > 92 else None
+            if not retail_date or (isinstance(retail_date, str) and not retail_date.strip()):
                 skipped += 1
                 continue
 
@@ -69,6 +81,14 @@ def extract_records(wb, sheet_name, include_comment=True, max_cols=93, dc_filter
             if v is None:
                 continue
             r[key] = v
+
+        # For DC: override confMonth with Retail Sales Month (the official DC grouping)
+        if dc_filter and retail_month and str(retail_month).strip() in month_num:
+            # Derive year from Retail Sales Date (e.g. '2026-02-05' → '2026')
+            year = str(retail_date)[:4] if retail_date else '2026'
+            mm = month_num[str(retail_month).strip()]
+            r['confMonth'] = f"{year}-{mm}"
+
         # Derive state from dealer code
         dealer = str(r.get('dealer', ''))
         if len(dealer) >= 2 and dealer[:2].isalpha():
@@ -76,7 +96,7 @@ def extract_records(wb, sheet_name, include_comment=True, max_cols=93, dc_filter
         records.append(r)
 
     if dc_filter and skipped > 0:
-        print(f"//   DC filter: {skipped} 'Not Include' records skipped", file=sys.stderr)
+        print(f"//   DC filter: {skipped} rows without Retail Sales Date skipped", file=sys.stderr)
 
     return records
 
@@ -117,7 +137,7 @@ def main():
     d12m = extract_records(wb, 'RO (12M)', include_comment=False)
 
     print(f"// 3M: {len(d3m)} records", file=sys.stderr)
-    print(f"// DC: {len(ddc)} records (filtered by Status='Include')", file=sys.stderr)
+    print(f"// DC: {len(ddc)} records (filtered by Retail Sales Date)", file=sys.stderr)
     print(f"// 12M: {len(d12m)} records", file=sys.stderr)
 
     # Build compact 12M format
