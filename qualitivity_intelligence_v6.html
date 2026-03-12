@@ -872,9 +872,14 @@ function buildIdx(){
 // ===== NLP v2: TEMPORAL LOGIC (Level 5B) =====
 function parseTemporal(lo){
   const now=new Date();const cy=now.getFullYear();const cm=now.getMonth();
-  // Q1-Q4 with year
-  let m=lo.match(/q([1-4])\s*(\d{4})/);
-  if(m){const q=+m[1],y=+m[2];return{monthFilter:[(q-1)*3+1,(q-1)*3+2,(q-1)*3+3].map(mo=>`${y}-${String(mo).padStart(2,'0')}`)};}
+  // Month name map — EN/ES/KO short+long
+  const _MN={jan:0,ene:0,feb:1,mar:2,apr:3,abr:3,may:4,jun:5,jul:6,aug:7,ago:7,sep:8,oct:9,nov:10,dec:11,dic:11,
+    january:0,enero:0,february:1,febrero:1,march:2,marzo:2,april:3,abril:3,mayo:4,june:5,junio:5,july:6,julio:6,
+    august:7,agosto:7,september:8,septiembre:8,october:9,octubre:9,november:10,noviembre:10,december:11,diciembre:11,
+    '1월':0,'2월':1,'3월':2,'4월':3,'5월':4,'6월':5,'7월':6,'8월':7,'9월':8,'10월':9,'11월':10,'12월':11};
+  // Q1-Q4 with optional year
+  let m=lo.match(/q([1-4])\s*(\d{4})?/);
+  if(m){const q=+m[1],y=m[2]?+m[2]:cy;return{monthFilter:[(q-1)*3+1,(q-1)*3+2,(q-1)*3+3].map(mo=>`${y}-${String(mo).padStart(2,'0')}`)};}
   // "last quarter" / "último trimestre"
   if(/last\s*quarter|ultimo\s*trimestre|지난\s*분기/.test(lo)){
     let pq=Math.floor(cm/3)-1,py=cy;if(pq<0){pq=3;py--;}
@@ -896,10 +901,41 @@ function parseTemporal(lo){
   if(/this\s*year|este\s*a[nñ]o|올해/.test(lo)){
     return{monthFilter:Array.from({length:12},(_,i)=>`${cy}-${String(i+1).padStart(2,'0')}`)};
   }
+  // "last year" / "año pasado"
+  if(/last\s*year|a[nñ]o\s*pasado|지난\s*해/.test(lo)){
+    return{monthFilter:Array.from({length:12},(_,i)=>`${cy-1}-${String(i+1).padStart(2,'0')}`)};
+  }
   // "year over year" / "yoy"
   if(/year\s*over\s*year|yoy|a[nñ]o\s*(contra|vs|sobre)\s*a[nñ]o|전년\s*대비/.test(lo)){
     return{comparison:'yoy'};
   }
+  // Season detection — winter/summer/etc
+  if(/winter|invierno|겨울/.test(lo)){return{monthFilter:[12,1,2].flatMap(mo=>[cy,cy-1].map(y=>`${y}-${String(mo).padStart(2,'0')}`))};}
+  if(/summer|verano|여름/.test(lo)){return{monthFilter:[6,7,8].flatMap(mo=>[cy,cy-1].map(y=>`${y}-${String(mo).padStart(2,'0')}`))};}
+  if(/spring|primavera|봄/.test(lo)){return{monthFilter:[3,4,5].flatMap(mo=>[cy,cy-1].map(y=>`${y}-${String(mo).padStart(2,'0')}`))};}
+  if(/fall|autumn|oto[nñ]o|가을/.test(lo)){return{monthFilter:[9,10,11].flatMap(mo=>[cy,cy-1].map(y=>`${y}-${String(mo).padStart(2,'0')}`))};}
+  // Month name detection — "January", "febrero", "julio 2025", "en marzo", "during july"
+  // Check for explicit year + month first
+  m=lo.match(/(\d{4})\s*[-\/]?\s*(\d{1,2})\b/);
+  if(m){const y=+m[1],mo=+m[2];if(mo>=1&&mo<=12)return{monthFilter:[`${y}-${String(mo).padStart(2,'0')}`]};}
+  // Then named months — with optional year
+  for(const[name,idx]of Object.entries(_MN)){
+    if(typeof name==='string'&&name.length>=3&&lo.includes(name)){
+      const moNum=idx+1;
+      // Check for an adjacent year: "january 2025" / "2025 enero"
+      const yrM=lo.match(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*(\\d{4})|(\\d{4})\\s*'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+      if(yrM){
+        const yr=+(yrM[1]||yrM[2]);
+        return{monthFilter:[`${yr}-${String(moNum).padStart(2,'0')}`]};
+      }
+      // No year specified — match across all years in data
+      const allYears=[cy-2,cy-1,cy,cy+1];
+      return{monthFilter:allYears.map(y=>`${y}-${String(moNum).padStart(2,'0')}`)};
+    }
+  }
+  // YYYY-MM format at end of string
+  m=lo.match(/(\d{4})-(\d{2})/);
+  if(m)return{monthFilter:[m[0]]};
   return null;
 }
 
@@ -930,18 +966,18 @@ const INTENT_DEFS=[
   {type:'periodcompare',kw:[{p:/period\s*compar|기간\s*비교/,w:12},{p:/3m\s*vs\s*12m/,w:12},{p:/improvement|mejora|deterioro|getting\s*better|getting\s*worse/,w:8},{p:/periodo/,w:5}],min:7},
   {type:'map',kw:[{p:/\bmap\b|mapa\b|지도/,w:8},{p:/geographic|geografic/,w:7}],min:6},
   {type:'ranking',kw:[{p:/top|ranking|principales/,w:7},{p:/mas\s+|mayor|상위/,w:5},{p:/best|worst|mejor|peor/,w:6}],min:5},
-  {type:'trend',kw:[{p:/trend|tendencia|evolucion|추세/,w:8},{p:/mensual|월/,w:5}],min:6},
+  {type:'trend',kw:[{p:/trend|tendencia|evolucion|추세/,w:8},{p:/mensual|monthly|월/,w:5},{p:/over\s*time|a\s*lo\s*largo|historico|historico/,w:6}],min:5},
   {type:'heatmap',kw:[{p:/heatmap|mapa\s*de\s*calor|히트맵/,w:10}],min:8},
   {type:'pareto',kw:[{p:/pareto/,w:12}],min:10},
   {type:'scatter',kw:[{p:/scatter|dispersi|산점도/,w:10}],min:8},
-  {type:'summary',kw:[{p:/summary|resumen|dashboard|요약|개요/,w:8}],min:6},
+  {type:'summary',kw:[{p:/summary|resumen|dashboard|요약|개요/,w:8},{p:/overview|vista\s*general|general|panorama|status|estado\s*general/,w:7},{p:/how\s*(are|is)\s*(the|my|our|los|las|el)|como\s*(est[aá]n?|van|anda)\s*(los|las|el|mi)/,w:8}],min:6},
   {type:'comparison',kw:[{p:/compare|comparar|비교/,w:8},{p:/\bvs\b/,w:5}],min:6},
   {type:'anomaly',kw:[{p:/flag|anomal|이상|abus/,w:8},{p:/anormal/,w:7}],min:6},
   {type:'detail',kw:[{p:/detail|detalle|list|lista|목록/,w:7}],min:5},
   {type:'donut',kw:[{p:/donut|pie|pastel|원형|dona/,w:10}],min:8},
   {type:'stratification',kw:[{p:/stratif|estratif/,w:10},{p:/breakdown|분석/,w:5}],min:8},
   {type:'failuremode',kw:[{p:/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|고장\s*모드/,w:12},{p:/customer\s*(complaint|failure)|queja.*cliente/,w:10},{p:/failure\s*mode\s*analy/,w:14}],min:9},
-  {type:'analysis',kw:[{p:/analysis|analisis|분석/,w:6}],min:5},
+  {type:'analysis',kw:[{p:/analysis|analisis|분석/,w:6},{p:/que\s*pasa|what.?s\s*(happening|going|wrong)|como\s*(est[aá]|van|anda)/,w:7},{p:/show\s*me|muestr|ensena|dame/,w:3}],min:5},
 ];
 
 function scoreIntent(lo,I){
@@ -1070,16 +1106,16 @@ const lm=lo.match(/top\s*(\d+)|primeros?\s*(\d+)|(\d+)\s*(?:principales|primeros
 if(lm)I.limit=parseInt(lm[1]||lm[2]||lm[3]);
 if(/cost|costo|precio|gasto|비용/.test(lo))I.metric='cost';
 else if(/mileage|kilometr|km|주행/.test(lo))I.metric='mileage';
-if(/by part|por parte|부품별/.test(lo))I.groupBy='partNM';
-else if(/by system|por sistema|시스템별/.test(lo))I.groupBy='system';
-else if(/by project|por proyecto|por modelo|by model|모델별/.test(lo))I.groupBy='proj';
-else if(/by nation|por pais|by country|국가별|시장별|by market/.test(lo))I.groupBy='nation';
-else if(/by nature|modo de falla|failure mode|불량유형/.test(lo))I.groupBy='natName';
-else if(/by supplier|por proveedor|공급업체별/.test(lo))I.groupBy='devName';
-else if(/by dealer|por dealer|딜러별/.test(lo))I.groupBy='dealer';
-else if(/by month|por mes|월별/.test(lo))I.groupBy='confMonth';
-else if(/by state|por estado|주별/.test(lo))I.groupBy='state';
-else if(/by cause|por causa|원인별/.test(lo))I.groupBy='causeCode';
+if(/by\s*part|por\s*parte|부품별|per\s*part/.test(lo))I.groupBy='partNM';
+else if(/by\s*system|por\s*sistema|시스템별|per\s*system/.test(lo))I.groupBy='system';
+else if(/by\s*project|por\s*proyecto|por\s*modelo|by\s*model|모델별|per\s*project/.test(lo))I.groupBy='proj';
+else if(/by\s*nation|por\s*pais|by\s*country|국가별|시장별|by\s*market|per\s*market|por\s*mercado/.test(lo))I.groupBy='nation';
+else if(/by\s*nature|modo\s*de\s*falla|failure\s*mode|불량유형/.test(lo))I.groupBy='natName';
+else if(/by\s*supplier|por\s*proveedor|공급업체별|per\s*supplier/.test(lo))I.groupBy='devName';
+else if(/by\s*dealer|por\s*dealer|딜러별|per\s*dealer|por\s*distribuidor/.test(lo))I.groupBy='dealer';
+else if(/by\s*month|por\s*mes|월별|monthly|mensual|per\s*month/.test(lo))I.groupBy='confMonth';
+else if(/by\s*state|por\s*estado|주별|per\s*state/.test(lo))I.groupBy='state';
+else if(/by\s*cause|por\s*causa|원인별|per\s*cause/.test(lo))I.groupBy='causeCode';
 // Viz hints
 if(/\bmap\b|mapa\b|지도|geographic|geografic/.test(lo))I.viz='map';
 else if(/heatmap|mapa de calor|히트맵/.test(lo)&&/state|estado|usa|region|geographic|geografic/.test(lo))I.viz='map';
@@ -1090,13 +1126,21 @@ else if(/pie|pastel|donut|dona|원형/.test(lo))I.viz='donut';
 else if(/treemap/.test(lo))I.viz='treemap';
 // Intent — Level 3: scored multi-intent system
 scoreIntent(lo,I);
-// Fallback: sysCategory → analysis, cost+part → ranking, common patterns
+// Fallback: smart routing based on detected context
 if(I.type==='unknown'){
+  // Casual question patterns → analysis or summary
+  const _casual=/que\s*pasa|what.?s\s*(happening|going|wrong|up)|como\s*(est[aá]|van|anda)|show\s*me|muestr|dame|ensena|how\s*(are|is|many)|cuantos?|cuantas?|dime|tell\s*me/;
   if(I.filters._sysCategory)I.type='analysis';
   else if(/cost|costo/.test(lo)&&/part|parte/.test(lo)){I.type='ranking';I.groupBy='partNM';I.metric='cost';}
   else if(/supplier|proveedor|공급/.test(lo)){I.type='ranking';I.groupBy='devName';}
   else if(/common|comun|frecuente|repair|reparacion/.test(lo)){I.type='ranking';if(!I.groupBy)I.groupBy='natName';}
   else if(/state|estado/.test(lo)&&/claim|garanti|reclam/.test(lo))I.type='map';
+  // If a specific part or HVAC was detected with casual language → analysis
+  else if((I.filters.partNM||I.filters._hvac)&&_casual.test(lo))I.type='analysis';
+  // If a specific part was detected → analysis (user wants to know about that part)
+  else if(I.filters.partNM)I.type='analysis';
+  // If casual question with nation/project → summary for that context
+  else if(_casual.test(lo)&&(I.filters.nation||I.filters.proj))I.type='summary';
   else{I.type='ranking';if(!I.groupBy)I.groupBy='partNM';}
 }
 // Symptom search detected later will override groupBy if not set — handled after _natSearch detection
@@ -1139,23 +1183,25 @@ if(!nations.length){
 if(/\bcl4\b/.test(lo))I.filters.proj='CL4';
 else if(/\bnx4m?\b|tucson/.test(lo))I.filters.proj='NX4M';
 else if(/\bbl7m?\b/.test(lo))I.filters.proj='BL7M';
-if(/\belectron\b|전자/.test(lo))I.filters.system='Electron';
+else if(/\bbdm\b/.test(lo))I.filters.proj='BDM';
+else if(/\bsc\b/.test(lo)&&!/scorecard|scatter/.test(lo))I.filters.proj='SC';
+if(/\belectron\b|electrico|electrical|전자/.test(lo))I.filters.system='Electron';
 else if(/\btrim\b|트림/.test(lo))I.filters.system='Trim';
-else if(/\bchassis\b|샤시/.test(lo))I.filters.system='Chassis';
-else if(/\bengine\b|motor|엔진/.test(lo)&&!/warning|light/.test(lo))I.filters.system='Engine';
-else if(/\btm\b|transmisi|변속/.test(lo))I.filters.system='TM';
-else if(/infotainment|인포/.test(lo))I.filters.system='Infotainment';
+else if(/\bchassis\b|chasis|샤시|suspension|suspens/.test(lo))I.filters.system='Chassis';
+else if(/\bengine\b|motor\b|엔진/.test(lo)&&!/warning|light/.test(lo))I.filters.system='Engine';
+else if(/\btm\b|transmisi|변속|transmission/.test(lo))I.filters.system='TM';
+else if(/infotainment|인포|multimedia|pantalla|screen|display/.test(lo)&&!/infotainment/.test(I.filters.partNM||''))I.filters.system='Infotainment';
 // Part filters — hardcoded known parts first, then fuzzy fallback (Level 2)
-if(/battery|bateria|배터리/.test(lo))I.filters.partNM='BATTERY ASSY';
+if(/batter[yia]|배터리/.test(lo))I.filters.partNM='BATTERY ASSY';
 else if(/oxygen|oxigeno|o2.*sensor|산소/.test(lo))I.filters.partNM='SENSOR ASSY-OXYGEN';
-else if(/horn|claxon|bocina|혼/.test(lo))I.filters.partNM='HORN ASSY-LOW PITCH';
-else if(/cvt|transaxle/.test(lo))I.filters.partNM='TRANSAXLE ASSY-CVT';
+else if(/\bhorn\b|claxon|bocina|혼/.test(lo))I.filters.partNM='HORN ASSY-LOW PITCH';
+else if(/\bcvt\b|transaxle/.test(lo))I.filters.partNM='TRANSAXLE ASSY-CVT';
 else if(/\bbdc\b/.test(lo))I.filters.partNM='UNIT ASSY-BDC';
 else if(/tpms/.test(lo))I.filters.partNM='VALVE-TPMS';
 else if(/brake|freno|브레이크/.test(lo))I.filters.partNM='CYLINDER ASSY-BRAKE MASTER';
 else if(/smart.*key|fob|llave/.test(lo))I.filters.partNM='FOB-SMART KEY';
 else if(/wiring.*main|arnes.*main|배선/.test(lo))I.filters.partNM='WIRING ASSY-MAIN';
-else if(/ac\s|a\/c|hvac|air\s*cond|aire\s*acond|cooling\b|enfri|not\s*cool|no\s*enfr|clima/.test(lo)){
+else if(/\bac\s|a\/c|hvac|air\s*cond|aire\s*acond|cooling\b|enfri|not\s*cool|no\s*enfr|climatiza|calefac|heater|heating|에어컨/.test(lo)){
   I.filters._hvac=true;
 }
 // Failure mode / symptom text search — detect symptom keywords in query
@@ -1469,8 +1515,8 @@ function mkMap(data, title, normalized){
       const val=stValues[stHere]||0;
       const claims=stClaims[stHere]||0;
       const sales=SALES_ST[stHere]||0;
-      const intensity=maxVal>0?val/maxVal:0;
-      const ci=Math.min(Math.floor(intensity*10),10);
+      const intensity=maxVal>0?Math.sqrt(val/maxVal):0;
+      const ci=Math.min(Math.round(intensity*10),10);
       const bg=val>0?HC[ci]:'#0a0f18';
       const fg=ci>4?'#fff':'var(--tx3)';
       const tip=`${ST_NAMES[stHere]}\nClaims: ${claims}${sales?'\nSales: '+fN(sales):''}${sales>0?'\nRatio: '+(claims/sales*1000).toFixed(1)+' per 1K':''}`;
@@ -1581,8 +1627,8 @@ function mkRealMap(data, title, normalized, overlayVar, overlayLabel, monthIdx){
       .attr('d',path)
       .attr('fill',d=>{
         const st=FIPS[parseInt(d.id)];if(!st)return'#0a0f18';
-        const v=stVals[st]||0;const intensity=mx>0?v/mx:0;
-        const ci=Math.min(Math.floor(intensity*10),10);
+        const v=stVals[st]||0;const intensity=mx>0?Math.sqrt(v/mx):0;
+        const ci=Math.min(Math.round(intensity*10),10);
         return v>0?HC[ci]:'#0a0f18';
       })
       .attr('stroke','#1a2536').attr('stroke-width',0.5)
@@ -1697,7 +1743,7 @@ function refreshCVList(){
 function parseMonth(q){
   const lo=q.toLowerCase();
   const monthMap={'jan':0,'ene':0,'feb':1,'mar':2,'apr':3,'abr':3,'may':4,'jun':5,'jul':6,'aug':7,'ago':7,'sep':8,'oct':9,'nov':10,'dec':11,'dic':11,
-    'january':0,'enero':1,'february':1,'febrero':1,'march':2,'marzo':2,'april':3,'abril':3,'mayo':4,'june':5,'junio':5,'july':6,'julio':6,
+    'january':0,'enero':0,'february':1,'febrero':1,'march':2,'marzo':2,'april':3,'abril':3,'mayo':4,'june':5,'junio':5,'july':6,'julio':6,
     'august':7,'agosto':7,'september':8,'septiembre':8,'october':9,'octubre':9,'november':10,'noviembre':10,'december':11,'diciembre':11,
     '1월':0,'2월':1,'3월':2,'4월':3,'5월':4,'6월':5,'7월':6,'8월':7,'9월':8,'10월':9,'11월':10,'12월':11};
   for(const[k,v]of Object.entries(monthMap)){
@@ -2411,8 +2457,8 @@ function mkGenMap(data, title, tileMap, nameMap, geoField, cellSize, climateDB, 
     for(const[code,[cr,cc]]of Object.entries(tileMap)){if(cr===r&&cc===c){here=code;break;}}
     if(here){
       const claims=geoClaims[here]||0;
-      const intensity=maxVal>0?claims/maxVal:0;
-      const ci=Math.min(Math.floor(intensity*10),10);
+      const intensity=maxVal>0?Math.sqrt(claims/maxVal):0;
+      const ci=Math.min(Math.round(intensity*10),10);
       const bg=claims>0?HC[ci]:'#0a0f18';
       const fg=ci>4?'#fff':'var(--tx3)';
       const name=nameMap[here]||here;
