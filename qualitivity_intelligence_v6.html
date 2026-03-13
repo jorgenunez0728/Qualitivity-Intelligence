@@ -1027,6 +1027,7 @@ const INTENT_DEFS=[
   {type:'stratification',kw:[{p:/stratif|estratif/,w:10},{p:/breakdown|분석/,w:5}],min:8},
   {type:'failuremode',kw:[{p:/failure\s*mode|modo\s*de\s*falla|modos?\s*de\s*falla|고장\s*모드/,w:12},{p:/customer\s*(complaint|failure)|queja.*cliente/,w:10},{p:/failure\s*mode\s*analy/,w:14}],min:9},
   {type:'analysis',kw:[{p:/analysis|analisis|분석/,w:6},{p:/que\s*pasa|what.?s\s*(happening|going|wrong)|como\s*(est[aá]|van|anda)/,w:7},{p:/show\s*me|muestr|ensena|dame/,w:3}],min:5},
+  {type:'kpi',kw:[{p:/\bkpi\b/,w:14},{p:/claim\s*trend|tendencia.*claim/,w:10},{p:/overall\s*status|estado\s*general\s*kpi/,w:10},{p:/indicador|indicator/,w:6},{p:/top\s*issues|principales\s*problemas/,w:8}],min:8},
 ];
 
 function scoreIntent(lo,I){
@@ -3616,6 +3617,104 @@ function genPeriodCompare(I){
   return h;
 }
 
+// ===== KPI DASHBOARD (Matches Qualitivity Claim Trend) =====
+function genKPI(I){
+  const fd=fdsc(I.filters);
+  // Build KPI for each dataset separately
+  function kpiBlock(label,data,periodField){
+    if(!data.length)return'';
+    const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
+    const pc=data.reduce((s,r)=>s+(r.partCost||0),0);
+    const lc=data.reduce((s,r)=>s+(r.laborCost||0),0);
+    const oc=data.reduce((s,r)=>s+(r.outsource||0),0);
+    const projs=[...new Set(data.map(r=>r.proj))].filter(Boolean).sort();
+    const nations=[...new Set(data.map(r=>r.nation))].filter(Boolean);
+    // Claims by period
+    const byPeriod={};
+    data.forEach(r=>{const p=r[periodField]||'unknown';if(!byPeriod[p])byPeriod[p]=0;byPeriod[p]++;});
+    const periods=Object.keys(byPeriod).sort();
+    // Claims by project
+    const byProj={};
+    data.forEach(r=>{const p=r.proj||'?';if(!byProj[p])byProj[p]=0;byProj[p]++;});
+    // Top Issues: by proj+partNM, with monthly breakdown
+    const topMap={};
+    data.forEach(r=>{
+      const k=(r.proj||'?')+'|||'+(r.partNM||'?');
+      if(!topMap[k])topMap[k]={proj:r.proj||'?',part:r.partNM||'?',total:0,byP:{}};
+      topMap[k].total++;
+      const p=r[periodField]||'?';
+      if(!topMap[k].byP[p])topMap[k].byP[p]=0;
+      topMap[k].byP[p]++;
+    });
+    const topItems=Object.values(topMap).sort((a,b)=>b.total-a.total).slice(0,25);
+    // Header
+    let h=`<div class="cb"><div class="ct" style="font-size:14px;margin-bottom:12px">${label} Claim Trend</div>`;
+    // KPI cards
+    h+=mkKPIs([
+      ['Total Claims',fN(data.length),'var(--ac)',projs.join(' · ')],
+      ['Total Cost',f$(tc),'var(--or)',`Avg ${f$(data.length?tc/data.length:0)}`],
+      ['Part Cost',f$(pc),'var(--pu)',pc>0?Math.round(pc/tc*100)+'% of total':''],
+      ['Labor Cost',f$(lc),'var(--cy)',lc>0?Math.round(lc/tc*100)+'% of total':''],
+      ['Markets',fN(nations.length),'var(--gn)',nations.slice(0,3).join(', ')],
+    ]);
+    // Overall table: Claims by period
+    h+='<div class="tw" style="margin:10px 0"><table><thead><tr><th></th>';
+    periods.forEach(p=>h+=`<th style="text-align:center">${esc(p)}</th>`);
+    h+='<th style="text-align:center;color:var(--ac)">Total</th></tr></thead><tbody>';
+    h+='<tr><td><b>Claims</b></td>';
+    periods.forEach(p=>h+=`<td style="text-align:center;font-weight:700">${fN(byPeriod[p])}</td>`);
+    h+=`<td style="text-align:center;font-weight:700;color:var(--ac)">${fN(data.length)}</td></tr>`;
+    // By project row
+    projs.forEach(proj=>{
+      h+=`<tr><td style="color:var(--tx2)">${esc(proj)}</td>`;
+      periods.forEach(p=>{
+        const cnt=data.filter(r=>r.proj===proj&&r[periodField]===p).length;
+        h+=`<td style="text-align:center">${cnt||''}</td>`;
+      });
+      h+=`<td style="text-align:center;color:var(--pu)">${byProj[proj]||0}</td></tr>`;
+    });
+    h+='</tbody></table></div>';
+    // Top Issues table
+    h+='<div style="margin-top:12px"><div class="ct" style="font-size:12px">Top Issues</div>';
+    h+='<div class="tw"><table><thead><tr><th>Model</th><th>Part Name</th>';
+    periods.forEach(p=>{
+      const short=p.replace(/^20/,'').replace(/-0?/,'-');
+      h+=`<th style="text-align:center">${esc(short)}</th>`;
+    });
+    h+='<th style="text-align:center;color:var(--ac)">Total</th></tr></thead><tbody>';
+    topItems.forEach(it=>{
+      const isHigh=it.total>=5;
+      h+=`<tr><td style="font-weight:600">${esc(it.proj)}</td><td>${esc(tr(it.part,35))}</td>`;
+      periods.forEach(p=>{
+        const v=it.byP[p]||0;
+        h+=`<td style="text-align:center">${v||''}</td>`;
+      });
+      h+=`<td style="text-align:center;font-weight:700;${isHigh?'color:var(--rd);background:rgba(248,113,113,.1)':''}">${it.total}</td></tr>`;
+    });
+    h+='</tbody></table></div></div>';
+    // Bar chart of top 10
+    h+=mkBar(ag(data,'partNM','count').slice(0,10),'count','Top 10 Parts by Claims');
+    h+='</div>';
+    return h;
+  }
+  // Determine which datasets to show
+  let h=`<p><b>KPI Dashboard / Tablero de Indicadores</b>${fd?' | '+fd:''}</p>`;
+  if(aDS==='all'||aDS==='3M'){
+    const d3m=flt(D['3M']||[],I.filters);
+    if(d3m.length)h+=kpiBlock('3M',d3m,'salesMonth');
+  }
+  if(aDS==='all'||aDS==='DC'){
+    const ddc=flt(D['DC']||[],I.filters);
+    if(ddc.length)h+=kpiBlock('DC',ddc,'confMonth');
+  }
+  if(aDS==='all'||aDS==='12M'){
+    const d12m=flt(D['12M']||[],I.filters);
+    if(d12m.length)h+=kpiBlock('12M',d12m,'confMonth');
+  }
+  h+=`<span class="st">Qualitivity KPI · ${dsl()} · ${fN(gDS().length)} total claims</span>`;
+  return h;
+}
+
 // ===== QUERY PROCESSOR =====
 // ===== FEATURE: SPARKLINE TREND INDICATORS =====
 function mkSpk(allData,key,val){
@@ -4040,6 +4139,7 @@ function proc(q){
     case'exportxls':{const d=flt(gDS(),I.filters);exportXLSX(d,'qualitivity_export');return _pb+`<p>📊 Exported ${fN(d.length)} claims to Excel (.xls).</p>`;}
     case'supplierrisk':return _pb+genSupplierRisk(I);
     case'periodcompare':return _pb+genPeriodCompare(I);
+    case'kpi':return _pb+genKPI(I);
     case'vizstudio':return _pb+genVizStudio(I);
     case'dashbuilder':return _pb+genDashboard(I);
     case'snapshots':{showSnapshots();return _pb+'<p>Loading data snapshots...</p>';}
@@ -4172,6 +4272,7 @@ document.getElementById('dst').addEventListener('click',e=>{if(e.target.classLis
 
 // ===== CHIPS =====
 const CHIPS=[
+{l:'KPI Dashboard — Claim Trend & Top Issues',q:'KPI'},
 {l:'Executive intelligence briefing',q:'Intelligence briefing'},
 {l:'Top 10 defects driving warranty cost',q:'Top 10 parts by cost'},
 {l:'Customer failure modes: steering & alignment',q:'failure mode analysis steering'},
