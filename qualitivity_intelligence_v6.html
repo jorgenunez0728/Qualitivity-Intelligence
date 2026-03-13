@@ -696,6 +696,9 @@ const SYS_CAT={
   'safety':{label:'Safety / Seguridad / 안전',kw:/safety|seguridad|안전|airbag|bolsa.*aire|에어백|srs|restraint|abs|collision|colision|충돌|sensor.*crash/,systems:[],parts:/AIR.*BAG|SRS|RESTRAINT/},
 };
 
+// ===== CAUSE CODE DESCRIPTIONS (Qualitivity ZZ codes) =====
+const CAUSE_CODES={'ZZ1':'Structural issues','ZZ2':'Part exterior defect','ZZ3':'Part function defect','ZZ4':'Part material defect','ZZ5':'Vehicle performance defect','ZZ6':'External defect out of vehicle','ZZ7':'Assembly failure','ZZ8':'Vehicle body defect','ZZ9':'Vehicle system defect (comm.)'};
+
 // ===== CUSTOMER FAILURE MODE TAXONOMY =====
 // ===== 2-LEVEL CUSTOMER FAILURE MODE (CFM) CLASSIFIER =====
 const CFM_CATS=[
@@ -1057,7 +1060,7 @@ function scoreIntent(lo,I){
     else if(/pais|country|nation|국가/.test(lo))I.groupBy='nation';
     else I.groupBy='partNM';
   }
-  if(I.type==='trend')I.groupBy='confMonth';
+  if(I.type==='trend')I.groupBy='salesMonth';
 }
 
 // ===== NLP v2: CONVERSATIONAL CONTEXT (Level 4) =====
@@ -1163,7 +1166,7 @@ else if(/by\s*nation|por\s*pais|by\s*country|국가별|시장별|by\s*market|per
 else if(/by\s*nature|modo\s*de\s*falla|failure\s*mode|불량유형/.test(lo))I.groupBy='natName';
 else if(/by\s*supplier|por\s*proveedor|공급업체별|per\s*supplier/.test(lo))I.groupBy='devName';
 else if(/by\s*dealer|por\s*dealer|딜러별|per\s*dealer|por\s*distribuidor/.test(lo))I.groupBy='dealer';
-else if(/by\s*month|por\s*mes|월별|monthly|mensual|per\s*month/.test(lo))I.groupBy='confMonth';
+else if(/by\s*month|por\s*mes|월별|monthly|mensual|per\s*month/.test(lo))I.groupBy='salesMonth';
 else if(/by\s*state|por\s*estado|주별|per\s*state/.test(lo))I.groupBy='state';
 else if(/by\s*cause|por\s*causa|원인별|per\s*cause/.test(lo))I.groupBy='causeCode';
 // Viz hints
@@ -1401,6 +1404,7 @@ function ag(data,gBy,metric){
   // Remap _failureMode/_failureSub IDs to human-readable labels
   if(gBy==='_failureMode')res.forEach(r=>{r.key=cfmLabel(r.key);});
   if(gBy==='_failureSub')res.forEach(r=>{r.key=cfmSubLabel(r.key);});
+  if(gBy==='causeCode')res.forEach(r=>{if(CAUSE_CODES[r.key])r.key=r.key+' — '+CAUSE_CODES[r.key];});
   return res;
 }
 
@@ -2142,8 +2146,8 @@ function genAnalysis(I){
   const byN=ag(data,'nation','count');if(byN.length>1)h+=mkDonut(byN,'Market / Mercado');
   const byP=ag(data,'proj','count');if(byP.length>1)h+=mkDonut(byP,'Project / Proyecto');
   if(byP.length>1)h+=mkHeat(data,'natName','proj','Nature × Project');
-  const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
-  if(byM.length>1)h+=mkBar(byM,'count','Monthly Trend / Tendencia');
+  const byM=ag(data,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  if(byM.length>1)h+=mkBar(byM,'count','Trend by Sale Month / Tendencia por Mes de Venta');
   // US Map if enough US data
   const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
   if(usData.length>=5)h+=mkMap(usData,'US Geographic Distribution (Normalized)',true);
@@ -2218,8 +2222,8 @@ function genFailureMode(I){
   const byDTC=ag(dtcData.length>0?dtcData:data,'causeCode','count').filter(d=>d.key).slice(0,8);
   if(byDTC.length>0)h+=mkBar(byDTC,'count','Cause / DTC Codes');
   // Monthly trend
-  const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
-  if(byM.length>1)h+=mkBar(byM,'count','Monthly Trend / Tendencia');
+  const byM=ag(data,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  if(byM.length>1)h+=mkBar(byM,'count','Trend by Sale Month / Tendencia por Mes de Venta');
   // Market donuts
   if(nations.length>1)h+=mkDonut(ag(data,'nation','count'),'Market / Mercado');
   if(projs.length>1)h+=mkDonut(ag(data,'proj','count'),'Project / Proyecto');
@@ -2281,20 +2285,20 @@ function mkTrendSVG(pts,title,isCost){
 }
 function genTrend(I){
   const data=flt(gDS(),I.filters);if(!data.length)return'<p>No data.</p>';
-  const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
-  const byCost=ag(data,'confMonth','cost').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  const byM=ag(data,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  const byCost=ag(data,'salesMonth','cost').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
   const fd=fdsc(I.filters);
-  let h=`<p><b>Monthly Trend</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
+  let h=`<p><b>Trend by Sale Month</b>${fd?' | '+fd:''} | ${dsl()}</p>`;
   // KPIs
   const tc=data.reduce((s,r)=>s+(r.totalCost||0),0);
   const months=byM.length;
   const avgClaims=months>0?Math.round(byM.reduce((s,m)=>s+m.count,0)/months):0;
   h+=mkKPIs([['Total Claims',fN(data.length),'var(--ac)'],['Months',fN(months),'var(--gn)'],['Avg/Month',fN(avgClaims),'var(--pu)'],['Total Cost',f$(tc),'var(--or)']]);
   // SVG trend charts
-  h+=mkTrendSVG(byM.map(m=>({m:m.key,y:m.count})),'Claims / Month',false);
-  h+=mkTrendSVG(byCost.map(m=>({m:m.key,y:m.cost})),'Cost / Month (USD)',true);
+  h+=mkTrendSVG(byM.map(m=>({m:m.key,y:m.count})),'Claims / Sale Month',false);
+  h+=mkTrendSVG(byCost.map(m=>({m:m.key,y:m.cost})),'Cost / Sale Month (USD)',true);
   const prjs=[...new Set(data.map(r=>r.proj))].filter(Boolean);
-  if(prjs.length>1)h+=mkHeat(data,'proj','confMonth','Project × Month');
+  if(prjs.length>1)h+=mkHeat(data,'proj','salesMonth','Project × Sale Month');
   h+=srcTag(data.length);return h;
 }
 
@@ -2310,8 +2314,8 @@ function genSummary(I){
   h+=mkDonut(ag(data,'nation','count'),'By Market / Mercado');
   h+=mkHeat(data,'system','proj','System × Project');
   h+=mkTreemap(ag(data,'partNM','count').slice(0,12),'Claims Treemap');
-  const byM=ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
-  h+=mkBar(byM,'count','Monthly Trend');
+  const byM=ag(data,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  h+=mkBar(byM,'count','Trend by Sale Month / Tendencia por Mes de Venta');
   // US Map
   const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
   if(usData.length>=5){
@@ -2414,7 +2418,7 @@ function genHeatmap(I){
   h+=mkHeat(data,'system','proj','System × Project');
   h+=mkHeat(data,'natName','proj','Nature × Project');
   h+=mkHeat(data,'system','nation','System × Market');
-  h+=mkHeat(data,'partNM','confMonth','Top Parts × Month');
+  h+=mkHeat(data,'partNM','salesMonth','Parts × Sale Month');
   const usData=data.filter(r=>r.nation==='U.S.A'&&r.state);
   if(usData.length>=5)h+=mkMap(usData,'US Geographic Heatmap (Normalized)',true);
   const mxData=data.filter(r=>r.nation==='Mexico');
@@ -2728,7 +2732,7 @@ const VIZ_TYPES=[
   {id:'treemap',icon:'🌲',label:'Treemap',fn:(d,f)=>mkTreemap(ag(flt(d,f),_vizGroupBy||'partNM',_vizMetric||'count').slice(0,12),'Treemap')},
   {id:'heatmap',icon:'🔥',label:'Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'system','proj','System × Project Heatmap')},
   {id:'scatter',icon:'🔍',label:'Scatter',fn:(d,f)=>mkScatter(flt(d,f).slice(0,250),'Mileage vs Cost')},
-  {id:'trend',icon:'📈',label:'Trend',fn:(d,f)=>{const byM=ag(flt(d,f),'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));return mkBar(byM,'count','Monthly Trend');}},
+  {id:'trend',icon:'📈',label:'Trend',fn:(d,f)=>{const byM=ag(flt(d,f),'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));return mkBar(byM,'count','Trend by Sale Month');}},
   {id:'tbl',icon:'📋',label:'Table',fn:(d,f)=>{const dt=flt(d,f).slice(0,30);return mkTbl(dt,[{l:'Part',k:'partNM',f:v=>esc(tr(v,25))},{l:'System',k:'system',f:v=>esc(v||'')},{l:'Nation',k:'nation',f:v=>esc(v||'')},{l:'Cost',k:'totalCost',f:v=>f$(v)},{l:'Mileage',k:'mileage',f:v=>fN(v)+' km'}]);}},
   {id:'usmap',icon:'🗺️',label:'USA Map',fn:(d,f)=>mkMap(flt(d,f).filter(r=>r.nation==='U.S.A'&&r.state),'USA Claims Map',false)},
   {id:'mxmap',icon:'🇲🇽',label:'México Map',fn:(d,f)=>mkMexicoMap(flt(d,f).filter(r=>r.nation==='Mexico'),'México Claims Map')},
@@ -2739,8 +2743,8 @@ const VIZ_TYPES=[
   {id:'memap',icon:'🕌',label:'ME Map',fn:(d,f)=>mkMEMap(flt(d,f).filter(r=>r.region==='Middle East'),'Middle East Claims Map')},
   {id:'histogram',icon:'📊',label:'Mileage Hist',fn:(d,f)=>mkHistogram(flt(d,f).filter(r=>r.mileage>0),'Mileage Distribution')},
   {id:'waterfall',icon:'💧',label:'Cost Split',fn:(d,f)=>{const dt=flt(d,f);const bySys=ag(dt,'system','cost').slice(0,10).map(s=>{const sd=dt.filter(r=>r.system===s.key);return{key:s.key,...s,pCost:sd.reduce((x,r)=>x+(r.partCost||0),0),lCost:sd.reduce((x,r)=>x+(r.laborCost||0),0),outsource:sd.reduce((x,r)=>x+(r.outsource||0),0)};});return mkWaterfall(bySys,'Cost Breakdown');}},
-  {id:'timeheat',icon:'📅',label:'Time Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'partNM','confMonth','Part × Month Heatmap')},
-  {id:'dealheat',icon:'🏢',label:'Dealer Heat',fn:(d,f)=>mkHeat(flt(d,f),'dealer','confMonth','Dealer × Month Heatmap')},
+  {id:'timeheat',icon:'📅',label:'Time Heatmap',fn:(d,f)=>mkHeat(flt(d,f),'partNM','salesMonth','Part × Sale Month')},
+  {id:'dealheat',icon:'🏢',label:'Dealer Heat',fn:(d,f)=>mkHeat(flt(d,f),'dealer','salesMonth','Dealer × Sale Month')},
 ];
 let _vizGroupBy='partNM';let _vizMetric='count';
 
@@ -2751,8 +2755,8 @@ function vizComboBar(dataRef){
     h+=`<button class="viz-btn" onclick="addVizSlot('${vt.id}',${_vizCounter})" title="${vt.label}">${vt.icon} ${vt.label}</button>`;
   });
   h+=`<span style="font-size:9px;color:var(--tx3);margin-left:auto">Group:</span>`;
-  ['partNM','system','nation','dealer','devName','proj','natName','confMonth'].forEach(g=>{
-    h+=`<button class="viz-btn${g===_vizGroupBy?' va':''}" onclick="_vizGroupBy='${g}';regenVizSlots(${_vizCounter})">${g==='partNM'?'Part':g==='devName'?'Supplier':g==='natName'?'Nature':g==='confMonth'?'Month':g.charAt(0).toUpperCase()+g.slice(1)}</button>`;
+  ['partNM','system','nation','dealer','devName','proj','natName','salesMonth','confMonth'].forEach(g=>{
+    h+=`<button class="viz-btn${g===_vizGroupBy?' va':''}" onclick="_vizGroupBy='${g}';regenVizSlots(${_vizCounter})">${g==='partNM'?'Part':g==='devName'?'Supplier':g==='natName'?'Nature':g==='salesMonth'?'Sale Mo':g==='confMonth'?'Conf Mo':g.charAt(0).toUpperCase()+g.slice(1)}</button>`;
   });
   h+=`<span style="font-size:9px;color:var(--tx3);margin-left:4px">Metric:</span>`;
   ['count','cost','mileage'].forEach(m=>{
@@ -3496,8 +3500,8 @@ function genExecReport(I){
     return{proj:p,claims:d.length,cost:tc2,avgC:d.length?tc2/d.length:0};});
   h+=mkTbl(rows,[{l:'Project',k:'proj',f:v=>`<b>${v}</b>`},{l:'Claims',k:'claims',f:v=>fN(v)},{l:'Cost',k:'cost',f:v=>f$(v)},{l:'Avg Cost',k:'avgC',f:v=>f$(v)}]);
   // Monthly trend
-  const byM=ag(all,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
-  h+=mkBar(byM,'count','Monthly Trend');
+  const byM=ag(all,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key)));
+  h+=mkBar(byM,'count','Trend by Sale Month');
   // Top systems
   h+=mkDonut(ag(all,'system','count'),'By System');
   // Map
@@ -4726,6 +4730,14 @@ window.addEventListener('load',()=>{
     }
     if(typeof US_SALES_BY_STATE!=='undefined')SALES_ST=US_SALES_BY_STATE;
     if(typeof QUALITIVITY_DATA!=='undefined'&&QUALITIVITY_DATA.monthly_sales)KPI_MONTHLY_SALES=QUALITIVITY_DATA.monthly_sales;
+    // Normalize DC salesMonth from retailSalesMonth when salesMonth is bad
+    const _MO_NAMES={'January':'01','February':'02','March':'03','April':'04','May':'05','June':'06','July':'07','August':'08','September':'09','October':'10','November':'11','December':'12'};
+    for(const r of D['DC']){
+      if((!r.salesMonth||r.salesMonth==='1900-01')&&r.retailSalesMonth){
+        const mo=_MO_NAMES[r.retailSalesMonth];
+        if(mo&&r.confMonth){const cY=+r.confMonth.slice(0,4),cM=+r.confMonth.slice(5,7),sM=+mo;r.salesMonth=(sM>cM?cY-1:cY)+'-'+mo;}
+      }
+    }
     // Pre-compute customer failure modes from [C] comments
     for(const ds of['3M','DC','12M']){if(!D[ds])continue;for(const r of D[ds]){r._custComment=extractCC(r.comment);const _cfmR=categorizeFailure(r._custComment);r._failureMode=_cfmR.cat;r._failureSub=_cfmR.sub;}}
     // Load any previously imported data from IndexedDB
@@ -5215,7 +5227,7 @@ function genDashboard(I){
   const panels=[
     {title:'Top Parts',html:mkBar(ag(data,'partNM','count').slice(0,8),'count','Top 8 Parts')},
     {title:'System Distribution',html:mkDonut(ag(data,'system','count'),'By System')},
-    {title:'Monthly Trend',html:mkBar(ag(data,'confMonth','count').sort((a,b)=>String(a.key).localeCompare(String(b.key))),'count','Monthly Trend')},
+    {title:'Trend by Sale Month',html:mkBar(ag(data,'salesMonth','count').filter(d=>d.key&&d.key>'2000').sort((a,b)=>String(a.key).localeCompare(String(b.key))),'count','Trend by Sale Month')},
     {title:'Markets',html:mkDonut(ag(data,'nation','count'),'By Market')},
   ];
   panels.forEach((p,i)=>{
