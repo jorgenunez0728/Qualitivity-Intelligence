@@ -1414,7 +1414,7 @@ function mkBar(items,metric,title,rawData){
   let h=`<div class="cb"><div class="ct">${esc(title)}</div>`;
   const tot=items.reduce((s,x)=>s+x.value,0);
   items.forEach((it,i)=>{
-    const p=mx>0?(it.value/mx*100):0;
+    const p=mx>0?Math.max(it.value/mx*100,4):0;
     const vs=metric==='cost'?f$(it.value):fN(it.value,metric==='mileage'?0:0);
     const spk=rawData?mkSpk(rawData,'partNM',it.key):'';
     h+=`<div class="br br-click" style="animation-delay:${i*0.05}s" onclick="drill('partNM','${esc(it.key).replace(/'/g,"\\'")}')" title="Click to drill into ${esc(it.key)}"><span class="bl" title="${esc(it.key)}">${i+1}. ${esc(tr(it.key,22))}</span>${spk}<div class="bt"><div class="bf" style="--tw:${p}%;width:${p}%;background:${C[i%C.length]};animation-delay:${i*0.06}s"></div></div><span class="bv">${vs}</span><span class="bp">${pc(it.value,tot)}</span></div>`;
@@ -1458,7 +1458,7 @@ function mkPareto(items,title){
   let cum=0;const mx=items[0].value;
   let h=`<div class="cb"><div class="ct">${esc(title)} — Pareto</div>`;
   items.forEach((it,i)=>{
-    cum+=it.value;const p=mx>0?(it.value/mx*100):0;const cp=tot>0?(cum/tot*100):0;
+    cum+=it.value;const p=mx>0?Math.max(it.value/mx*100,4):0;const cp=tot>0?(cum/tot*100):0;
     h+=`<div class="br" style="animation-delay:${i*0.05}s"><span class="bl">${esc(tr(it.key,24))}</span><div class="bt" style="position:relative"><div class="bf" style="--tw:${p}%;width:${p}%;background:${C[i%C.length]};animation-delay:${i*0.06}s"></div><div style="position:absolute;right:4px;top:2px;font-size:9px;color:var(--yl);font-family:'JetBrains Mono',monospace">${cp.toFixed(0)}%</div></div><span class="bv">${fN(it.value)}</span></div>`;
   });
   let c80=0,n80=0;for(const it of items){c80+=it.value;n80++;if(c80/tot>=.8)break;}
