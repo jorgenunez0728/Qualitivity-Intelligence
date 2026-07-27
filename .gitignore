@@ -1,11 +1,13 @@
 # Generated intermediate files
 data_block.js
 qualitivity_data.json
-src/data/*.js
+src/data/qualitivity_data.js
 dist/
 
 # Source exports — datos confidenciales de garantía (VIN, códigos de dealer).
-# Colocar los export nuevos en data/ para que NO entren al repositorio.
-data/
+# Colocar los export nuevos en /data (raíz) para que NO entren al repositorio.
+# (con "/" al inicio: NO afecta a src/data/, donde climate_constants.js sí
+# se commitea — son constantes NOAA estáticas, no datos de garantía)
+/data/
 *.xlsm
 __pycache__/

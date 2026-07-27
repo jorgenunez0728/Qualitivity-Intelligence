@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W2P — Warranty 2 Prevention · Qualitivity Intelligence — KMX</title>
+<style>
+{{STYLES}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+</head>
+<body>
+<div class="lo" id="lo"><div class="lr"></div><p>Initializing Warranty 2 Prevention...</p></div>
+<div class="splash" id="splash" style="display:none">
+<div class="splash-diamond">◆</div>
+<div class="splash-title">Warranty 2 Prevention</div>
+<div class="splash-line"></div>
+<div class="splash-sub">W2P · Qualitivity Intelligence · KIA México</div>
+<div class="splash-ver">Real-Time Warranty Analysis · 11,000+ Claims · NLP-Powered</div>
+</div>
+<header class="hdr">
+<div class="hdr-l"><div class="logo">W2P</div><div class="hdr-t">Warranty 2 <span>Prevention</span> <span style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:6px">Qualitivity Intelligence</span></div></div>
+<div class="pills">
+<span class="pill">Data: <b>Jul 2026</b></span><span class="pill" id="pC">Claims: <b>—</b></span><span class="pill">v<b>7</b></span>
+<button class="pill" onclick="showImportModal()" style="cursor:pointer;background:var(--acd);border-color:var(--ac)" title="Import new Qualitivity data">📥 Import</button>
+<button class="pill" onclick="showSavedQueries()" style="cursor:pointer;background:var(--sf2)" title="Saved queries / Consultas guardadas">⭐</button>
+<button class="pill" onclick="showHistory()" style="cursor:pointer;background:var(--sf2)" title="Query history / Historial">📜</button>
+<button class="pill" onclick="toggleLang()" id="langBtn" style="cursor:pointer;background:var(--sf2)" title="Toggle language">🌐 EN</button>
+<button class="pill" onclick="inp.value='Executive report';send();" style="cursor:pointer;background:var(--sf2)" title="Print Executive Report">🖨️</button>
+<button class="pill" onclick="showShareModal()" style="cursor:pointer;background:var(--sf2)" title="Share / Compartir">📤</button>
+<button class="pill pres-btn" id="presBtn" onclick="togglePres()" style="cursor:pointer;background:var(--sf2)" title="Presentation Mode / Modo Presentación (Ctrl+Shift+P)">📽️</button>
+<button class="pill" onclick="startTour()" style="cursor:pointer;background:var(--sf2);font-weight:700" title="Guided Tour / Recorrido guiado">?</button>
+</div>
+</header>
+<div class="kstrip" id="ks"></div>
+<div class="main">
+<div class="chat" id="ch"></div>
+<div class="cps" id="cps"></div>
+<div class="ia">
+<div class="dst" id="dst"><button class="dt" onclick="openCustomVarPanel()" style="margin-right:8px;border-color:var(--pu);color:var(--pu)">⚙️ Custom Vars</button>
+<button class="dt a" data-d="all">All</button>
+<button class="dt" data-d="3M">3M</button>
+<button class="dt" data-d="DC">DC</button>
+<button class="dt" data-d="12M">12M</button>
+</div>
+<div class="ir" style="position:relative">
+<div class="ac-drop" id="acDrop"></div>
+<textarea id="inp" placeholder="Pregunta sobre tus claims... / Ask about your claims..." rows="1"></textarea>
+<button class="sb" id="snd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg></button>
+<button class="rst-btn" id="rstBtn" onclick="clearChat()" title="Clear chat / Limpiar chat" style="display:none">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+</button>
+</div>
+</div>
+</div>
+
+<!-- DATA -->
+<script id="ds">
+{{DATA}}
+
+</script>
+
+<!-- QR Code Generator (qrcode-generator v1.4.4, MIT License, https://github.com/kazuhikoarase/qrcode-generator) -->
+<script>
+{{VENDOR_QRCODE}}
+</script>
+
+<script>
+{{APP}}
+</script>
+</body>
+</html>
