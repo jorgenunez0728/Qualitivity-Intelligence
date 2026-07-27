@@ -1,2 +1,10 @@
 # Generated intermediate files
 data_block.js
+qualitivity_data.json
+src/data/*.js
+dist/
+
+# Source exports — datos confidenciales de garantía (VIN, códigos de dealer).
+# Colocar los export nuevos en data/ para que NO entren al repositorio.
+data/
+*.xlsm
