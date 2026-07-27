@@ -79,6 +79,7 @@
   },
 
   "12WM": {
+    "_reconciliacion": "aproximada: filtrando RO 12M (bloque A, 30871 registros, Sales5 cubre 2023-05..2026-07) por Confirm.month==mes de corte AND Sales5 dentro de la ventana de N meses terminando en el corte, se obtiene 951/1059 (90%) en 12WM-Jul y 4013/3970 (101%) en 36WM-Jul. Es la mejor regla encontrada probando Confirm.month/WK End M./Repair como fecha de corte y excluyendo Status='Today'; ninguna combinación cerró exacto. Documentado como aproximación, no como cifra verificada.",
     "ventana_ventas_meses": 12,
     "tabla": [
       {"result": "2026-05", "ventana": "2025-05..2026-05", "index": 61.1, "sales_qty": 282649, "claims": 1318, "target": 48.1},

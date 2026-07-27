@@ -28,6 +28,7 @@ GOLDEN = os.path.join(RAIZ, 'tests', 'golden', 'report_0727.json')
 
 CSV_3M = os.path.join(RAIZ, 'Qualitivity 0727 RO 3M.csv')
 CSV_DC = os.path.join(RAIZ, 'Qualitivity 0727 RO DC.csv')
+CSV_12M = os.path.join(RAIZ, 'Qualitivity 0727 RO 12 M.zip')
 CSV_SALES = os.path.join(RAIZ, 'Qualitivity 0727 DB Sales DC.csv')
 
 MES_EN = {'January': '01', 'February': '02', 'March': '03', 'April': '04',
@@ -120,6 +121,35 @@ def main():
              if tid.get((p, pt), [0] * len(mesesd)) == esp)
     nd = len(golden['DC']['top_issues'])
     print(f'  {"~"} Top Issues                             {ad}/{nd} filas exactas   (ver DELTA_DC)')
+
+    # ── WM (12/36) — aproximación conocida, ver nota en el golden ──────────
+    print('\n═══ WM Claim Trend (12WM / 36WM) — aproximación ═══')
+    r12m, _ = read_ro(CSV_12M, 'A')
+    print(f'  bloque A: {len(r12m)} registros')
+
+    def _ym(s):
+        try:
+            y, m = s.split('-')
+            return int(y) * 12 + int(m)
+        except Exception:
+            return None
+
+    for seccion, horizonte in (('12WM', 12), ('36WM', 36)):
+        fila = golden[seccion]['tabla'][-1]  # Jul'26, la única columna confiable
+        cutoff = _ym(fila['result'])
+        sales_start = cutoff - horizonte + 1
+        n = sum(
+            1 for r in r12m
+            if _ym(r.get('Sales5', '')) is not None
+            and _ym(r.get('Confirm. month', '')) == cutoff
+            and sales_start <= _ym(r.get('Sales5', '')) <= cutoff
+        )
+        esp = fila['claims']
+        pct = 100 * n / esp if esp else 0
+        print(f'  ~ {seccion} Claims {fila["result"]}                    obtenido={n} esperado={esp}  ({pct:.0f}%)')
+    print('  Regla usada: Confirm.month == mes de corte AND Sales5 dentro de la ventana.')
+    print('  Es la mejor aproximación encontrada (ver nota "_reconciliacion" en el golden);')
+    print('  no cierra exacto con ninguna combinación de columnas de fecha probada.')
 
     # ── Exposición ────────────────────────────────────────────────────────
     print('\n═══ Base de exposición (denominador) ═══')
