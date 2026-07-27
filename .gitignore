@@ -8,3 +8,4 @@ dist/
 # Colocar los export nuevos en data/ para que NO entren al repositorio.
 data/
 *.xlsm
+__pycache__/

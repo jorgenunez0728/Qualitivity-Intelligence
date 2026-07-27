@@ -9,10 +9,13 @@ sirva de compuerta antes de publicar cifras.
 
 Qué reproduce hoy
 -----------------
-3M  · Claims por cohorte y las 27 filas de Top Issues → exacto.
-DC  · aproximado; ver DELTA_DC abajo.
-WM  · el numerador es reproducible, el denominador no: el export de ventas sólo
-      cubre 2026-05..07, y 12WM/36WM necesitan 12 y 36 meses.
+3M   · Claims por cohorte y las 27 filas de Top Issues → exacto.
+DC   · aproximado; ver DELTA_DC abajo (+3/+1/0 sobre 46/63/19).
+12WM · EXACTO — Claims 1318/1752/1059 e Index 38.9 (Jul'26), usando la regla
+       encontrada en genKPIMetrics(): confMonth==corte y
+       0<=(corte-salesMonth)<=12 (inclusive). Confirmado corriendo la app
+       real en Chromium (tests/e2e/kpi_dashboard.test.mjs).
+36WM · no implementado en la app ni reproducido aquí; ver nota en el golden.
 """
 
 import collections
@@ -122,34 +125,41 @@ def main():
     nd = len(golden['DC']['top_issues'])
     print(f'  {"~"} Top Issues                             {ad}/{nd} filas exactas   (ver DELTA_DC)')
 
-    # ── WM (12/36) — aproximación conocida, ver nota en el golden ──────────
-    print('\n═══ WM Claim Trend (12WM / 36WM) — aproximación ═══')
+    # ── WM (12WM) ────────────────────────────────────────────────────────────
+    # Regla exacta descubierta leyendo genKPIMetrics() en
+    # qualitivity_intelligence_v6.html: confMonth == mes de corte, y la
+    # diferencia en meses contra Sales5 está entre 0 y el horizonte, AMBOS
+    # INCLUSIVE (0<=diff<=12, no <12 como se probó antes sin éxito).
+    # Confirmado corriendo la app real en Chromium vía Playwright
+    # (tests/e2e/kpi_dashboard.test.mjs): reproduce Claims=1318/1752/1059
+    # exactos para 12WM May/Jun/Jul'26, e Index=38.9 exacto en Jul'26.
+    print("\n═══ WM Claim Trend (12WM) ═══")
     r12m, _ = read_ro(CSV_12M, 'A')
     print(f'  bloque A: {len(r12m)} registros')
 
     def _ym(s):
-        try:
-            y, m = s.split('-')
-            return int(y) * 12 + int(m)
-        except Exception:
+        if not s or '-' not in s:
             return None
+        y, m = s.split('-')
+        return int(y) * 12 + int(m)
 
-    for seccion, horizonte in (('12WM', 12), ('36WM', 36)):
-        fila = golden[seccion]['tabla'][-1]  # Jul'26, la única columna confiable
+    horizonte = 12
+    for fila in golden['12WM']['tabla']:
         cutoff = _ym(fila['result'])
-        sales_start = cutoff - horizonte + 1
         n = sum(
             1 for r in r12m
-            if _ym(r.get('Sales5', '')) is not None
-            and _ym(r.get('Confirm. month', '')) == cutoff
-            and sales_start <= _ym(r.get('Sales5', '')) <= cutoff
+            if _ym(r.get('Confirm. month', '')) == cutoff
+            and _ym(r.get('Sales5', '')) is not None
+            and 0 <= (cutoff - _ym(r.get('Sales5', ''))) <= horizonte
         )
         esp = fila['claims']
-        pct = 100 * n / esp if esp else 0
-        print(f'  ~ {seccion} Claims {fila["result"]}                    obtenido={n} esperado={esp}  ({pct:.0f}%)')
-    print('  Regla usada: Confirm.month == mes de corte AND Sales5 dentro de la ventana.')
-    print('  Es la mejor aproximación encontrada (ver nota "_reconciliacion" en el golden);')
-    print('  no cierra exacto con ninguna combinación de columnas de fecha probada.')
+        ok = revisar(f'12WM Claims {fila["result"]}', n, esp)
+        if not ok:
+            fallos.append(f'12WM claims {fila["result"]}: {n} != {esp}')
+            bloqueantes.append(True)
+
+    print("\n  36WM: la misma regla con horizonte=36 NO reproduce el golden "
+          "(4112 vs 3970); la app tampoco implementa hoy una vista 36WM.")
 
     # ── Exposición ────────────────────────────────────────────────────────
     print('\n═══ Base de exposición (denominador) ═══')
@@ -168,7 +178,7 @@ def main():
     # ── Veredicto ─────────────────────────────────────────────────────────
     print('\n═══ Resumen ═══')
     if not any(bloqueantes):
-        print('  3M reconciliado contra el reporte oficial.')
+        print('  3M y 12WM reconciliados exactos contra el reporte oficial.')
     for f in fallos[:10]:
         print(f'  · {f}')
     print(f"""
@@ -178,9 +188,15 @@ def main():
     Indicio: el Index publicado de mayo (20.7) implica ~44 claims, no 46, así que
     el propio fixture de mayo es dudoso. Confirmar contra el PowerBI en vivo.
 
-  Denominador: 12WM y 36WM no son calculables con este export.
-    Pedir: ventas retail mensuales por mes x Project Name x Sale nations,
-    de 2023-07 a 2026-07, incluyendo BDM.""")
+  Denominador: 3M y 12WM ya tienen su Index verificado exacto usando las
+    ventas transcritas del reporte oficial (KPI_SALES/KPI_12M_SALES en
+    qualitivity_intelligence_v6.html). El export DB Sales DC.csv del
+    repositorio sigue sin cubrir la ventana completa (sólo 2026-05..07, sin
+    BDM), así que esos valores están hardcodeados desde la foto, no
+    derivados del CSV — apenas llegue el export correcto, reemplazarlos por
+    una serie calculada es el siguiente paso (ver tarea bloqueada).
+
+  36WM: no reproducido (ver arriba); la app no tiene aún una vista 36WM.""")
     return 1 if any(bloqueantes) else 0
 
 

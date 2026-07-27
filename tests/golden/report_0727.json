@@ -2,9 +2,10 @@
   "_fuente": "Reporte oficial KMX 'Qualitivity Claim Trend' (PowerBI), Last Refresh 2026/07/27 1:12. Valores transcritos de las capturas compartidas por el usuario.",
   "_formula": "Index = Claims / Sales * 10000",
   "_confianza": {
-    "3M": "alta — los 6 puntos Index/Claims/Sales cierran exactos",
-    "DC": "media — May'26 dudoso: Claims=46 leído de la foto es inconsistente con Index=20.7, que implica ~44. Confirmar contra el PowerBI.",
-    "12WM_36WM": "alta en la columna Jul'26; May/Jun con dígitos borrosos"
+    "3M": "confirmada — Claims e Index exactos en las 3 columnas reproducibles (2026-04/05/06), corriendo la app real en Chromium (tests/e2e/kpi_dashboard.test.mjs)",
+    "DC": "media — May'26 dudoso: Claims=46 leído de la foto es inconsistente con Index=20.7, que implica ~44. La app calcula [49,64,19] contra [46,63,19]; diferencia pequeña sin explicar. Confirmar contra el PowerBI.",
+    "12WM": "confirmada — Claims 1318/1752/1059 e Index 38.9 (Jul'26) exactos, usando la regla confMonth==corte AND 0<=(corte-salesMonth)<=12 (ver genKPIMetrics en qualitivity_intelligence_v6.html). Índices de May/Jun (61.1/63.7) no cierran con Claims/Sales exactos — probable columna congelada del PowerBI, no error del cálculo.",
+    "36WM": "no verificada — la regla de 12WM extendida a horizonte=36 da 4112 vs 3970; la app no implementa aún una vista 36WM"
   },
 
   "3M": {
@@ -79,11 +80,11 @@
   },
 
   "12WM": {
-    "_reconciliacion": "aproximada: filtrando RO 12M (bloque A, 30871 registros, Sales5 cubre 2023-05..2026-07) por Confirm.month==mes de corte AND Sales5 dentro de la ventana de N meses terminando en el corte, se obtiene 951/1059 (90%) en 12WM-Jul y 4013/3970 (101%) en 36WM-Jul. Es la mejor regla encontrada probando Confirm.month/WK End M./Repair como fecha de corte y excluyendo Status='Today'; ninguna combinación cerró exacto. Documentado como aproximación, no como cifra verificada.",
+    "_reconciliacion": "EXACTA: RO 12M (bloque A, 30871 registros, Sales5 cubre 2023-05..2026-07), filtrando por Confirm.month==mes de corte AND 0<=(corte-Sales5, en meses)<=12 (inclusive en ambos extremos). Reproduce Claims=1318/1752/1059 para May/Jun/Jul'26. Regla tomada de genKPIMetrics() en qualitivity_intelligence_v6.html y confirmada corriendo la app real (tests/e2e/kpi_dashboard.test.mjs). El intento previo con '<' estricto en vez de '<=' daba sólo 90-101%.",
     "ventana_ventas_meses": 12,
     "tabla": [
       {"result": "2026-05", "ventana": "2025-05..2026-05", "index": 61.1, "sales_qty": 282649, "claims": 1318, "target": 48.1},
-      {"result": "2026-06", "ventana": "2025-06..2026-06", "index": 63.7, "sales_qty": 285541, "claims": null, "target": 46.5},
+      {"result": "2026-06", "ventana": "2025-06..2026-06", "index": 63.7, "sales_qty": 285541, "claims": 1752, "target": 46.5},
       {"result": "2026-07", "ventana": "2025-07..2026-07", "index": 38.9, "sales_qty": 272197, "claims": 1059, "target": 45.6, "forecast": 53}
     ],
     "top_issues_meses": ["2026-05", "2026-06", "2026-07"],
