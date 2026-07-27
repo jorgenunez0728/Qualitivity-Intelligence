@@ -145,6 +145,22 @@ Reproduced and verified against `tests/golden/report_0727.json`:
   them yet. Run `python3 tools/reconcile.py` any time you're unsure what's verified vs. transcribed;
   it prints a live comparison and states exactly what's missing (a monthly sales series by
   `month × Project Name × Sale nations` from 2023-07 to 2026-07, including BDM).
+- **Confidence interval**: every Index cell shows a 95% Wilson interval (`wilsonInterval` in
+  `src/js/03-stats-climate.js`) below the value — a reminder that Index is a rate estimate, not an
+  exact count, especially in low-volume months (DC).
+- **"New Items" / casos emergentes**: the report flags specific rows with a ◆ (emerging failure
+  mode), stated as "difference between the current N-month period and the preceding N-month
+  period". **Not implemented** — investigated and found not reliably reproducible: crossing all 227
+  project+part combos in the 3M block A against block B's only historical window (Dec'25-Mar'26),
+  `prev≈0` is necessary but not sufficient (15+ unflagged combos also have `prev=0`, some with much
+  higher current volume than the two combos the report does flag). Don't guess at this rule and ship
+  it — a wrong "emerging" flag is worse than not having the feature. See `tests/golden/report_0727.json`
+  → `_investigacion_emergentes` for the full cross-reference.
+- **MIS curve** ("WM Status (Months in Use)" chart in the official report, cumulative Index vs.
+  months-in-service with a Target line): not implemented. Would need per-cohort sales-at-risk data
+  broken down by MIS bucket, which needs the same wider sales export the Index denominator is
+  waiting on above — building it against the wrong denominator would produce a chart that looks
+  right but isn't.
 
 **Never present a computed Index without knowing which of the two categories above it falls into.**
 

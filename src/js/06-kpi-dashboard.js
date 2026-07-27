@@ -18,6 +18,18 @@ const KPI_12M_SALES={'2026-05':282649,'2026-06':285541,'2026-07':272197};
 const KPI_DC_FORECAST=20;
 const KPI_12M_FORECAST=53;
 
+// Subíndice con el intervalo de Wilson (95%) del Index, en un <span> chico
+// con tooltip. n suele ser grande (decenas/cientos de miles de ventas), así
+// que el intervalo típicamente es angosto — pero mostrarlo evita presentar
+// el Index como si fuera una cifra exacta sin margen de error, sobre todo en
+// los meses de pocas ventas (DC).
+function _idxCITag(claims,sales){
+  if(!sales)return'';
+  const{lo,hi}=wilsonInterval(claims,sales);
+  const loIdx=(lo*10000).toFixed(1),hiIdx=(hi*10000).toFixed(1);
+  return`<span style="font-size:8px;color:var(--tx3);display:block;font-weight:400" title="Intervalo de Wilson 95% (n=${fN(sales)} ventas)">±[${loIdx}, ${hiIdx}]</span>`;
+}
+
 function genKPIMetrics(I){
   let h='';
 
@@ -58,7 +70,7 @@ function genKPIMetrics(I){
     const idx=sl>0?(cl/sl*10000).toFixed(1):'—';
     const tgt=KPI_TARGETS.DC;
     const color=parseFloat(idx)>tgt?'var(--rd)':'var(--gn)';
-    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}</td>`;
+    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}${_idxCITag(cl,sl)}</td>`;
   });
   h+='</tr>';
   // Sales row
@@ -106,7 +118,7 @@ function genKPIMetrics(I){
     const idx=sl>0?(cl/sl*10000).toFixed(1):'—';
     const tgt=KPI_TARGETS['3M_'+m]||KPI_TARGETS['3M'];
     const color=parseFloat(idx)>(tgt||100)?'var(--rd)':'var(--gn)';
-    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}</td>`;
+    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}${_idxCITag(cl,sl)}</td>`;
   });
   h+='</tr>';
   // Sales
@@ -170,7 +182,7 @@ function genKPIMetrics(I){
     const idx=sl>0?(cl/sl*10000).toFixed(1):'—';
     const tgt=KPI_TARGETS['12M_'+m]||KPI_TARGETS['12M'];
     const color=parseFloat(idx)>(tgt||50)?'var(--rd)':'var(--gn)';
-    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}</td>`;
+    h+=`<td style="text-align:center;font-weight:700;color:${color}">${idx}${_idxCITag(cl,sl)}</td>`;
   });
   h+='</tr>';
   // Sales
@@ -194,6 +206,17 @@ function genKPIMetrics(I){
   // 12M Top Issues
   h+=mkTopIssues(wmData,'confMonth',wmMonths,'WM (12M) Top Issues');
 
+  h+=`<div style="font-size:10px;color:var(--tx3);margin-top:12px;padding:8px 10px;background:var(--sf2);border-radius:6px;line-height:1.6">
+    <b>Sobre estas cifras:</b>
+    Claims se cuenta directamente de los CSV/zip 0727 (bloque A) y está verificado exacto
+    contra el reporte oficial para 3M (2026-04..06) y 12WM (May/Jun/Jul'26: 1,318/1,752/1,059).
+    Sales (KPI_SALES / KPI_12M_SALES) está <b>transcrito del reporte oficial</b>, no derivado del
+    CSV de ventas — ese export sólo cubre 2026-05..07 y excluye BDM, insuficiente para
+    reconstruir las ventanas de 3 y 12 meses. El rango ±[…] bajo cada Index es el
+    intervalo de Wilson al 95% dado ese tamaño de muestra, no un margen de error del dato en sí.
+    DC mantiene una diferencia pequeña sin explicar (~+3/+1/0 claims vs. el reporte).
+    36WM no está implementado: la regla de 12WM extendida a 36 meses no reproduce el dato oficial.
+  </div>`;
   h+=`<span class="st">KPI Metrics · DC: ${fN(dcData.length)} · 3M: ${fN(tmData.length)} · 12M: ${fN(wmData.length)} claims</span>`;
   return h;
 }

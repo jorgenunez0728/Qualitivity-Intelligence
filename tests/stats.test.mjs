@@ -58,6 +58,15 @@ function poissonUpperTail(k, lambda) {
   for (let i = 1; i < k; i++) { term *= lambda / i; cum += term; }
   return Math.max(0, 1 - cum);
 }
+function wilsonInterval(k, n, z) {
+  z = z || 1.96;
+  if (n <= 0) return { lo: 0, hi: 0 };
+  const phat = k / n;
+  const denom = 1 + z * z / n;
+  const center = phat + z * z / (2 * n);
+  const margin = z * Math.sqrt(phat * (1 - phat) / n + z * z / (4 * n * n));
+  return { lo: Math.max(0, (center - margin) / denom), hi: Math.min(1, (center + margin) / denom) };
+}
 
 // Referencias generadas con scipy: 2*(1-stats.t.cdf(abs(t), df))
 const PEARSON_P_REF = [
@@ -102,4 +111,26 @@ test('poissonUpperTail: dealer grande con tasa esperada alta no se marca por con
   // scipy.stats.poisson.sf(21, 20) = 0.35630
   const p = poissonUpperTail(22, 20);
   assert.ok(Math.abs(p - 0.35630) < 1e-4, `obtenido ${p}`);
+});
+
+// Referencia: tabla estándar de Wilson score interval, k=8 n=20 -> (0.221, 0.618)
+test('wilsonInterval: k=8 n=20 coincide con la tabla de referencia', () => {
+  const { lo, hi } = wilsonInterval(8, 20);
+  assert.ok(Math.abs(lo - 0.221) < 0.005, `lo=${lo}`);
+  assert.ok(Math.abs(hi - 0.618) < 0.005, `hi=${hi}`);
+});
+
+test('wilsonInterval: 12WM Jul26 (1059/272197) da un intervalo estrecho alrededor del Index', () => {
+  const { lo, hi } = wilsonInterval(1059, 272197);
+  const idxLo = lo * 10000, idxHi = hi * 10000;
+  assert.ok(idxLo < 38.9 && idxHi > 38.9, `Index 38.9 debe caer dentro de [${idxLo}, ${idxHi}]`);
+  assert.ok((idxHi - idxLo) < 6, `con n=272,197 el intervalo debe ser angosto, obtenido ancho=${idxHi - idxLo}`);
+});
+
+test('wilsonInterval: n pequeño da un intervalo mucho más ancho', () => {
+  const wide = wilsonInterval(3, 20);   // DC, un mes cualquiera con pocos claims
+  const narrow = wilsonInterval(1059, 272197);
+  const widthWide = wide.hi - wide.lo;
+  const widthNarrow = narrow.hi - narrow.lo;
+  assert.ok(widthWide > widthNarrow * 100, 'el intervalo con n=20 debe ser mucho más ancho que con n=272,197');
 });

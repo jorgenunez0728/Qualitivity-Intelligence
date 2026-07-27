@@ -51,7 +51,8 @@
       ["CL4", "FOB-SMART KEY", [1, 2, 0, 0], 3]
     ],
     "casos_emergentes": ["CL4|HINGE ASSY-TAIL GATE", "CL4|SPOILER ASSY-RR"],
-    "regla_emergentes": "diferencia entre el periodo de 4 meses actual y el de 4 meses previo"
+    "regla_emergentes": "diferencia entre el periodo de 4 meses actual y el de 4 meses previo",
+    "_investigacion_emergentes": "NO implementado en la app. Se probó la hipótesis 'prev≈0 y cur por encima de un umbral' contra las 227 combinaciones proyecto+parte del bloque A cruzadas con el bloque B (único con cobertura Dic'25-Mar'26, el periodo previo): HINGE ASSY-TAIL GATE (cur=5,prev=0) y SPOILER ASSY-RR (cur=4,prev=0) sí tienen prev=0, pero también lo tienen WIRING ASSY-FRT (cur=11), SENSOR ASSY-OXYGEN BL7M (cur=13), LAMP ASSY-HEAD,RH (cur=9), BULB (cur=7) y otras 10+ combinaciones que el reporte NO marca con ◆. prev=0 es necesario pero no suficiente; no se encontró un umbral o regla que separe limpiamente los 2 casos marcados de los ~15 no marcados con las columnas disponibles. Implementar esto sin la regla real arriesga marcar partes como 'emergentes' de forma arbitraria — se prefiere no implementarlo a adivinar mal."
   },
 
   "DC": {

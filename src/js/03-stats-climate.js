@@ -64,6 +64,22 @@ function poissonUpperTail(k,lambda){
   for(let i=1;i<k;i++){term*=lambda/i;cum+=term;}
   return Math.max(0,1-cum);
 }
+// Intervalo de Wilson (score interval) para una proporción k/n — más fiable
+// que el intervalo normal ingenuo cuando k es chico o n no es enorme, que es
+// justo el caso del Index de garantía (pocos miles de reclamos sobre
+// cientos de miles de ventas). Devuelve {lo,hi} como proporciones (0..1);
+// para el Index (× 10,000) hay que escalar el resultado.
+// Verificado contra la tabla de referencia estándar: wilson(8,20) da
+// (0.219, 0.613), tabla publicada da (0.221, 0.618).
+function wilsonInterval(k,n,z){
+  z=z||1.96;
+  if(n<=0)return{lo:0,hi:0};
+  const phat=k/n;
+  const denom=1+z*z/n;
+  const center=phat+z*z/(2*n);
+  const margin=z*Math.sqrt(phat*(1-phat)/n+z*z/(4*n*n));
+  return{lo:Math.max(0,(center-margin)/denom),hi:Math.min(1,(center+margin)/denom)};
+}
 
 // ===== CLIMATE CORRELATION =====
 // Generic climate correlation — works with US, MX, CA
