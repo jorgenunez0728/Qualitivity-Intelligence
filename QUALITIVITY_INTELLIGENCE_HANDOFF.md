@@ -9,26 +9,32 @@
 
 ---
 
-## Current State (v5)
+## Current State (v6, corte de datos 0727)
+
+> Nota: esta sección quedó desactualizada tras la consolidación de ramas y la
+> migración del origen de datos de un .xlsm a los export CSV/zip 0727. Ver
+> CLAUDE.md para la referencia operativa vigente (estructura de archivos,
+> arquitectura, y la sección "Métricas y sus límites"); el resto de este
+> documento conserva el contexto histórico/narrativo del proyecto.
 
 ### File
-- `qualitivity_intelligence_v5.html` — single self-contained HTML file (~2.4 MB)
-- Data from `Qualitivity_0306.xlsm` is embedded as JavaScript variables
-- External dependencies: D3.js + TopoJSON (CDN, optional — tile map fallback if offline)
+- `qualitivity_intelligence_v6.html` — single self-contained HTML file (~19 MB con datos embebidos)
+- Datos extraídos de los CSV/zip `Qualitivity 0727 *` vía `extract_qualitivity.py`
+- External dependencies: D3.js + TopoJSON (CDN, optional — tile map fallback if offline; Google Fonts fue retirado por el requisito offline)
 
 ### Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
-│  qualitivity_intelligence_v5.html           │
+│  qualitivity_intelligence_v6.html           │
 │                                             │
 │  ┌─────────────┐  ┌──────────────────────┐  │
 │  │ DATA LAYER  │  │ INTELLIGENCE LAYER   │  │
 │  │             │  │                      │  │
-│  │ 3M: 356    │  │ NLP Parser (ES/EN/KO)│  │
-│  │ DC: 394    │  │ 14 intent types      │  │
-│  │ 12M: 10,606│  │ 8 system categories  │  │
-│  │ Sales: 28K │  │ 10 visualization fns │  │
+│  │ 3M: 415    │  │ NLP Parser (ES/EN/KO)│  │
+│  │ DC: 378    │  │ Scored intent system  │  │
+│  │ 12M: 30,871│  │ 8 system categories  │  │
+│  │ Sales: parcial│ 10 visualization fns │  │
 │  │ Climate: 50│  │ Month/filter parser   │  │
 │  │ Monthly: 50×12│                      │  │
 │  └─────────────┘  └──────────────────────┘  │
@@ -96,7 +102,7 @@ The `state` field is derived from the dealer code prefix (e.g., `FL112` → `FL`
 | `trend` | trend, tendencia, monthly, 월별 | `genTrend` |
 | `summary` | summary, resumen, dashboard, 요약 | `genSummary` |
 | `comparison` | compare, comparar, vs, 비교 | `genComparison` |
-| `anomaly` | flag, anomaly, abnormal, 이상 | `genAnomaly` |
+| `anomaly` | flag, anomaly, abnormal, 이상 | `genEnhancedAnomaly` |
 | `map` | map, mapa, geographic, 지도 | `genMap` |
 | `heatmap` | heatmap, mapa de calor, 히트맵 | `genHeatmap` |
 | `climate` | climate, temperatura, rain, 기후 | `genClimate` |
