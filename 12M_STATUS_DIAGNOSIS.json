@@ -1,0 +1,40 @@
+{
+  "12M_status_field": {
+    "column_index": 96,
+    "column_name": "Status",
+    "values": {
+      "1": 10437,
+      "Today": 169
+    },
+    "filter": "Keep only status==\"1\" for confirmed claims",
+    "note": "\"Today\" means newly added, not yet confirmed in the official system"
+  },
+  "12M_result_month_field": {
+    "column_index": 192,
+    "column_name": "Result Month",
+    "description": "Monthly assignment for official reporting (September, October, etc.)",
+    "note": "This may be the field that matches official monthly KPI reports"
+  },
+  "12M_sales_month_field": {
+    "column_index": 29,
+    "column_name": "Sales5",
+    "description": "Vehicle sales month (when the car was sold)",
+    "note": "The PIVOT uses this field for X-axis, not confMonth"
+  },
+  "extract_fix": {
+    "file": "extract_qualitivity.py",
+    "changes": [
+      "Add column 96 (Status) to key_map as \"status\"",
+      "Add column 192 (Result Month) to key_map as \"resultMonth\"",
+      "Add column 29 (Sales5) to key_map as \"salesMonth\"",
+      "For DC: filter rows where status != \"Include\" (continue/skip)",
+      "For 12M: filter rows where status != \"1\" (continue/skip)",
+      "For 3M: no filter needed (pre-filtered in first 93 cols)"
+    ]
+  },
+  "counts_after_fix": {
+    "DC": "137 (was 394, filtered by Status=Include)",
+    "3M": "356 (unchanged, already correct)",
+    "12M": "10,437 (was 10,606, filtered by Status=1, removes 169 Today/new)"
+  }
+}

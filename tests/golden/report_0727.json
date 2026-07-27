@@ -1,0 +1,127 @@
+{
+  "_fuente": "Reporte oficial KMX 'Qualitivity Claim Trend' (PowerBI), Last Refresh 2026/07/27 1:12. Valores transcritos de las capturas compartidas por el usuario.",
+  "_formula": "Index = Claims / Sales * 10000",
+  "_confianza": {
+    "3M": "confirmada — Claims e Index exactos en las 3 columnas reproducibles (2026-04/05/06), corriendo la app real en Chromium (tests/e2e/kpi_dashboard.test.mjs)",
+    "DC": "media — May'26 dudoso: Claims=46 leído de la foto es inconsistente con Index=20.7, que implica ~44. La app calcula [49,64,19] contra [46,63,19]; diferencia pequeña sin explicar. Confirmar contra el PowerBI.",
+    "12WM": "confirmada — Claims 1318/1752/1059 e Index 38.9 (Jul'26) exactos, usando la regla confMonth==corte AND 0<=(corte-salesMonth)<=12 (ver genKPIMetrics en qualitivity_intelligence_v6.html). Índices de May/Jun (61.1/63.7) no cierran con Claims/Sales exactos — probable columna congelada del PowerBI, no error del cálculo.",
+    "36WM": "no verificada — la regla de 12WM extendida a horizonte=36 da 4112 vs 3970; la app no implementa aún una vista 36WM"
+  },
+
+  "3M": {
+    "cohorte": "Sales5 (mes de venta retail)",
+    "bloque_csv": "A",
+    "horizonte_dias": 90,
+    "tabla": [
+      {"sales": "2026-01", "result": "2026-04", "index": 127.5, "sales_qty": 22353, "claims": 285, "target": 116.7},
+      {"sales": "2026-02", "result": "2026-05", "index": 120.1, "sales_qty": 22313, "claims": 268, "target": 111.3},
+      {"sales": "2026-03", "result": "2026-06", "index": 105.0, "sales_qty": 27050, "claims": 284, "target": 106.0},
+      {"sales": "2026-04", "result": "2026-07", "index": 105.7, "sales_qty": 22323, "claims": 236, "target": 100.7, "forecast": 115.0},
+      {"sales": "2026-05", "result": "2026-08", "index": 57.7, "sales_qty": 21131, "claims": 122, "target": 95.3, "forecast": 99.0},
+      {"sales": "2026-06", "result": "2026-09", "index": 24.2, "sales_qty": 22768, "claims": 55, "target": 90.0}
+    ],
+    "top_issues_meses": ["2026-04", "2026-05", "2026-06", "2026-07"],
+    "top_issues": [
+      ["BL7M", "SENSOR ASSY-OXYGEN", [4, 2, 7, 0], 13],
+      ["CL4", "WHEEL ALIGNMENT", [7, 4, 2, 0], 13],
+      ["CL4", "WIRING ASSY-FRT", [3, 6, 1, 1], 11],
+      ["CL4", "BATTERY ASSY", [4, 5, 1, 0], 10],
+      ["CL4", "LAMP ASSY-HEAD,RH", [5, 2, 1, 1], 9],
+      ["CL4", "PLUG ASSY-SPARK", [7, 2, 0, 0], 9],
+      ["CL4", "HYDRAULIC UNIT ASSY", [7, 0, 1, 0], 8],
+      ["CL4", "BULB", [3, 3, 1, 0], 7],
+      ["CL4", "SENSOR ASSY-OXYGEN", [3, 3, 0, 0], 6],
+      ["CL4", "UNIT ASSY-REAR VIEW CAMERA", [3, 2, 1, 0], 6],
+      ["CL4", "CLUSTER ASSY-INSTRUMENT", [4, 1, 0, 0], 5],
+      ["CL4", "ELECTRONIC CONTROL UNIT", [3, 1, 1, 0], 5],
+      ["CL4", "HINGE ASSY-TAIL GATE", [2, 3, 0, 0], 5],
+      ["CL4", "JUNCTION BOX ASSY-I/PNL", [3, 1, 1, 0], 5],
+      ["CL4", "LAMP ASSY-HEAD,LH", [4, 1, 0, 0], 5],
+      ["CL4", "TRANSAXLE ASSY-CVT", [3, 1, 1, 0], 5],
+      ["BL7M", "ATA & TQ/CONV ASSY", [1, 3, 0, 0], 4],
+      ["BL7M", "HORN ASSY-LOW PITCH", [4, 0, 0, 0], 4],
+      ["BL7M", "STRUT ASSY-FR,RH", [3, 1, 0, 0], 4],
+      ["CL4", "ALTERNATOR ASSY", [3, 0, 1, 0], 4],
+      ["CL4", "BLOWER ASSY", [3, 1, 0, 0], 4],
+      ["CL4", "GLASS-WINDSHIELD", [3, 1, 0, 0], 4],
+      ["CL4", "SPOILER ASSY-RR", [1, 1, 2, 0], 4],
+      ["CL4", "SUNVISOR ASSY,LH", [2, 2, 0, 0], 4],
+      ["CL4", "ACTUATOR-TEMP", [2, 1, 0, 0], 3],
+      ["CL4", "COMPRESSOR ASSY", [1, 2, 0, 0], 3],
+      ["CL4", "FOB-SMART KEY", [1, 2, 0, 0], 3]
+    ],
+    "casos_emergentes": ["CL4|HINGE ASSY-TAIL GATE", "CL4|SPOILER ASSY-RR"],
+    "regla_emergentes": "diferencia entre el periodo de 4 meses actual y el de 4 meses previo",
+    "_investigacion_emergentes": "NO implementado en la app. Se probó la hipótesis 'prev≈0 y cur por encima de un umbral' contra las 227 combinaciones proyecto+parte del bloque A cruzadas con el bloque B (único con cobertura Dic'25-Mar'26, el periodo previo): HINGE ASSY-TAIL GATE (cur=5,prev=0) y SPOILER ASSY-RR (cur=4,prev=0) sí tienen prev=0, pero también lo tienen WIRING ASSY-FRT (cur=11), SENSOR ASSY-OXYGEN BL7M (cur=13), LAMP ASSY-HEAD,RH (cur=9), BULB (cur=7) y otras 10+ combinaciones que el reporte NO marca con ◆. prev=0 es necesario pero no suficiente; no se encontró un umbral o regla que separe limpiamente los 2 casos marcados de los ~15 no marcados con las columnas disponibles. Implementar esto sin la regla real arriesga marcar partes como 'emergentes' de forma arbitraria — se prefiere no implementarlo a adivinar mal."
+  },
+
+  "DC": {
+    "cohorte": "Retail Sales Month (nombre de mes, columna propia de DC)",
+    "bloque_csv": "A",
+    "nota": "DC son reclamos previos a la venta retail (mediana de 17 km). El horizonte es 'Before Sales'.",
+    "tabla": [
+      {"sales": "2026-05", "result": "2026-06", "index": 20.7, "sales_qty": 21131, "claims": 46, "target": 13.0},
+      {"sales": "2026-06", "result": "2026-07", "index": 27.7, "sales_qty": 22768, "claims": 63, "target": 13.0, "forecast": 21},
+      {"sales": "2026-07", "result": "2026-08", "index": 8.7, "sales_qty": 21950, "claims": 19, "target": 13.0, "forecast": 20}
+    ],
+    "top_issues_meses": ["2026-05", "2026-06", "2026-07"],
+    "top_issues": [
+      ["CL4", "BATTERY ASSY", [7, 5, 0], 12],
+      ["NX4M", "BATTERY ASSY", [1, 8, 2], 11],
+      ["BL7M", "SENSOR ASSY-OXYGEN", [3, 3, 0], 6],
+      ["CL4", "@", [0, 3, 2], 5],
+      ["CL4", "CYLINDER ASSY-BRAKE MASTER", [2, 2, 1], 5],
+      ["NX4M", "DISC-FRONT WHEEL BRAKE", [1, 3, 1], 5],
+      ["BL7M", "FOB-SMART KEY", [2, 1, 0], 3],
+      ["CL4", "CLUSTER ASSY-INSTRUMENT", [1, 2, 0], 3],
+      ["CL4", "UNIT ASSY-REAR VIEW CAMERA", [1, 1, 1], 3],
+      ["NX4M", "UNIT ASSY-BDC", [0, 3, 0], 3]
+    ],
+    "regla_emergentes": "diferencia entre el periodo de 3 meses actual y el de 3 meses previo"
+  },
+
+  "12WM": {
+    "_reconciliacion": "EXACTA: RO 12M (bloque A, 30871 registros, Sales5 cubre 2023-05..2026-07), filtrando por Confirm.month==mes de corte AND 0<=(corte-Sales5, en meses)<=12 (inclusive en ambos extremos). Reproduce Claims=1318/1752/1059 para May/Jun/Jul'26. Regla tomada de genKPIMetrics() en qualitivity_intelligence_v6.html y confirmada corriendo la app real (tests/e2e/kpi_dashboard.test.mjs). El intento previo con '<' estricto en vez de '<=' daba sólo 90-101%.",
+    "ventana_ventas_meses": 12,
+    "tabla": [
+      {"result": "2026-05", "ventana": "2025-05..2026-05", "index": 61.1, "sales_qty": 282649, "claims": 1318, "target": 48.1},
+      {"result": "2026-06", "ventana": "2025-06..2026-06", "index": 63.7, "sales_qty": 285541, "claims": 1752, "target": 46.5},
+      {"result": "2026-07", "ventana": "2025-07..2026-07", "index": 38.9, "sales_qty": 272197, "claims": 1059, "target": 45.6, "forecast": 53}
+    ],
+    "top_issues_meses": ["2026-05", "2026-06", "2026-07"],
+    "top_issues": [
+      ["BL7M", "HORN ASSY-LOW PITCH", [106, 90, 60], 256],
+      ["CL4", "BATTERY ASSY", [32, 53, 15], 100],
+      ["CL4", "BEZEL ASSY-FLOOR CONSOLE FR", [34, 43, 21], 98],
+      ["CL4", "HOSE ASSY-OIL WARMER B", [31, 43, 11], 85],
+      ["CL4", "WHEEL ALIGNMENT (KMA)", [30, 47, 2], 79],
+      ["BL7M", "BATTERY ASSY", [24, 29, 16], 69],
+      ["CL4", "TRANSAXLE ASSY-CVT", [16, 28, 13], 57],
+      ["CL4", "UNIT ASSY-BDC", [27, 13, 10], 50],
+      ["CL4", "CLUSTER ASSY-INSTRUMENT", [6, 26, 17], 49],
+      ["CL4", "WIRING ASSY-MAIN", [17, 24, 7], 48]
+    ]
+  },
+
+  "36WM": {
+    "ventana_ventas_meses": 36,
+    "tabla": [
+      {"result": "2026-05", "ventana": "2023-05..2026-05", "index": 60.8, "sales_qty": 725090, "claims": 4196, "target": 60.3},
+      {"result": "2026-06", "ventana": "2023-06..2026-06", "index": 63.5, "sales_qty": 729183, "claims": 5752, "target": 57.8},
+      {"result": "2026-07", "ventana": "2023-07..2026-07", "index": 54.9, "sales_qty": 722614, "claims": 3970, "target": 56.5, "forecast": 55}
+    ],
+    "top_issues_meses": ["2026-05", "2026-06", "2026-07"],
+    "top_issues": [
+      ["BL7M", "BATTERY ASSY", [215, 323, 219], 757],
+      ["BDM", "COMPRESSOR ASSY", [82, 161, 139], 382],
+      ["BDM", "EVAPORATOR ASSY", [98, 163, 103], 364],
+      ["BL7M", "LAMP ASSY-HEAD,RH", [101, 79, 107], 287],
+      ["CL4", "BATTERY ASSY", [56, 111, 85], 252],
+      ["BL7M", "HORN ASSY-LOW PITCH", [92, 91, 43], 226],
+      ["BDM", "LAMP ASSY-HEAD,RH", [82, 52, 50], 184],
+      ["CL4", "UNIT ASSY-POWER WINDOW SUB", [38, 58, 80], 176],
+      ["BDM", "MOTOR ASSY-POWER WDO REG RR,LH", [42, 71, 33], 146],
+      ["BDM", "BATTERY ASSY", [47, 71, 23], 141]
+    ]
+  }
+}
